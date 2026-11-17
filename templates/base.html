@@ -14,6 +14,7 @@
     </div>
     <nav class="flex items-center gap-1">
       {% if user.is_authenticated %}
+        <a href="{% url 'catalog:find' %}" class="btn btn-ghost btn-sm">Find movies</a>
         <a href="{% url 'library:index' %}" class="btn btn-ghost btn-sm">Library</a>
         <span class="text-sm opacity-70 px-2">{{ user.username }}</span>
         <form method="post" action="{% url 'accounts:logout' %}">

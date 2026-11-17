@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Find movies{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Find movies</h1>
+<form method="get" action="{% url 'catalog:find' %}" class="join w-full mb-6"
+      hx-get="{% url 'catalog:find' %}" hx-target="#results" hx-push-url="true"
+      hx-indicator="#search-spinner">
+  <input type="search" name="q" value="{{ query }}" placeholder="Search TMDB by title…"
+         class="input join-item w-full" aria-label="Movie title" autofocus>
+  <button type="submit" class="btn btn-primary join-item">
+    <span id="search-spinner" class="loading loading-spinner loading-sm htmx-indicator"></span>
+    Search
+  </button>
+</form>
+<div id="results" aria-live="polite">
+  {% include "catalog/partials/results.html" %}
+</div>
+{% endblock %}

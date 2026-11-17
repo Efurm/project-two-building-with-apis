@@ -28,6 +28,37 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-16 — Implemented Phase 2 (Find movies, search only) with TDD
+
+### Prompts
+1. `/implement phase 2 of the plan`
+2. `yes` (approved three TDD behaviors: client error mapping; HTMX search returns the results partial; TMDB failure shows an alert in the results area)
+3. `yes pass as written` (approved the RED client error-mapping test)
+4. `yes` (moved on to behavior 2)
+5. `pass it` (approved the RED HTMX results-partial test)
+6. `yes` (moved on to behavior 3)
+7. `make it pass` (approved the RED failure-alert test)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:** Built `/find/` (`catalog:find`, sign-in required).
+  - **TMDB client (`catalog/tmdb.py`):** the only module that calls TMDB. It uses a 10-second timeout and raises one `TMDBError` with a `kind` and a user-readable `message`. The kinds are timeout, connection, request, 401 auth, 429 rate limit, other HTTP errors (with TMDB's `status_message`), invalid JSON, and a missing token (`not_configured`). It also has a `poster_url` helper.
+  - **Search page:** searching happens on submit through HTMX (`hx-get` into `#results`, with the query pushed to the URL). A non-HTMX request gets the full page with the same results partial.
+  - **Results:** each card shows the poster, title, year and an overview cut to 150 characters. Missing posters and posters that fail to load fall back to `static/img/poster-placeholder.svg`. A search with no results shows a "No movies found… try different words" message. Any `TMDBError` appears as a DaisyUI error alert inside the results area with a 200 status.
+  - **Navbar:** now has a "Find movies" link.
+  - **Tests:** the three TDD behaviors, plus ordinary tests for the extra error kinds, the token, query and timeout sent to TMDB, poster URLs, sign-in, empty and blank queries, the full-page response, no results, the placeholder, HTML escaping and the unconfigured-token alert. A new automatic fixture in the root `conftest.py` sets a dummy token and makes any real `requests.get` fail the test.
+  - **Results of checks:** 38 tests pass, ruff is clean, and the CSS was rebuilt. A live check against the real TMDB API confirmed real results (HTMX and full page), the no-results message, and the bad-token (401) alert.
+- **Deviations:** The user approved all three behaviors and RED tests without changes. The agent's own choices:
+  - Error messages were reworded from the console script for website visitors. For example, the 401 message says the site's configuration needs fixing instead of telling the reader to edit `.env`.
+  - A `not_configured` error was added for a missing token, and a `request` kind for other `requests` errors. Neither was in the plan.
+  - TMDB failures return 200 so HTMX swaps the alert in.
+- **Sideways:**
+  - Behavior 3's first run raised the view's exception instead of failing on an assertion. The test was changed to set `raise_request_exception = False` so it sees the 500 a browser would get; it still checks the same thing.
+  - Ruff flagged two lines that were too long, one of them in an approved test; both were split mechanically.
+  - The first live check piped a script into `manage.py shell`, which ran it as interactive input and left a throwaway `zz_live_check` user behind. That user was deleted, the check was re-run with `shell -c`, and the second run cleaned up after itself.
+  - The pages were checked with HTTP requests only; nobody viewed them in a browser.
+  - `CLAUDE.md` was not updated with the new test fixture.
+
 ## 2026-11-16 — Logged the Phase 1 session and updated CLAUDE.md with verified commands and conventions
 
 ### Prompts

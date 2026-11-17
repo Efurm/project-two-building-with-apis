@@ -1,0 +1,30 @@
+{% load static %}
+{% if error %}
+<div role="alert" class="alert alert-error alert-soft">
+  <span>{{ error }}</span>
+</div>
+{% elif results %}
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {% for movie in results %}
+  <article class="card card-side bg-base-100 shadow-sm">
+    <figure class="w-24 shrink-0 self-start">
+      {% static 'img/poster-placeholder.svg' as placeholder %}
+      <img src="{{ movie.poster_url|default:placeholder }}" alt="Poster for {{ movie.title }}"
+           width="96" height="144" loading="lazy" class="w-24 h-36 object-cover"
+           onerror="this.onerror=null;this.src='{{ placeholder }}'">
+    </figure>
+    <div class="card-body p-4">
+      <h2 class="card-title text-base">
+        {{ movie.title }}
+        {% if movie.year %}<span class="font-normal opacity-60">({{ movie.year }})</span>{% endif %}
+      </h2>
+      <p class="text-sm opacity-80">{{ movie.overview }}</p>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% elif query %}
+<div role="status" class="alert alert-info alert-soft">
+  <span>No movies found for “{{ query }}”. Try different words or check the spelling.</span>
+</div>
+{% endif %}

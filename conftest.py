@@ -1,9 +1,24 @@
 """Shared pytest fixtures for the whole project."""
 
 import pytest
+import requests
 from django.contrib.auth import get_user_model
 
 PASSWORD = "correct-horse-battery-staple"
+
+
+@pytest.fixture(autouse=True)
+def _no_real_tmdb(settings, monkeypatch):
+    """Tests never reach TMDB: give the client a dummy token and make real HTTP fail loudly.
+
+    Tests that exercise the client replace `requests.get` themselves.
+    """
+    settings.TMDB_READ_ACCESS_TOKEN = "test-token"
+
+    def _blocked(*args, **kwargs):
+        raise AssertionError(f"Real HTTP request attempted in a test: {args} {kwargs}")
+
+    monkeypatch.setattr(requests, "get", _blocked)
 
 
 @pytest.fixture
