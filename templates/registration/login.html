@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="card bg-base-100 shadow max-w-md mx-auto">
+  <div class="card-body">
+    <h1 class="card-title text-2xl">Log in</h1>
+    {% if next and not user.is_authenticated %}
+      <div role="alert" class="alert alert-info alert-soft">Please log in to manage your movies.</div>
+    {% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary w-full mt-4">Log in</button>
+    </form>
+    <p class="text-sm mt-2">New here? <a class="link" href="{% url 'accounts:signup' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

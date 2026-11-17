@@ -1,0 +1,262 @@
+<!doctype html>
+<!--
+  THROWAWAY PROTOTYPE — not production code.
+  Question: which rating scale/look should a saved movie use?
+    A = whole stars 1–5, B = half stars 0.5–5, C = 1–10 score.
+  DECISION (2026-11-16): A — whole stars 1–5, nullable, stored as a small
+  integer. Chosen for simple validation, clean "N★ & up" filters, and
+  DaisyUI's built-in rating component.
+  Open this file directly in a browser. Switch variants with the bottom-right
+  switcher or the ← / → keys. All state is in memory.
+-->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rating Scale Prototype</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5.0.43/daisyui.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+  <style>
+    #switcher { font-family: ui-monospace, monospace; }
+  </style>
+</head>
+<body class="min-h-screen bg-base-200">
+
+  <div class="navbar bg-base-100 shadow-sm px-4">
+    <span class="text-lg font-bold">🎬 Reel Log</span>
+    <span class="ml-auto text-sm opacity-60">prototype: rating scale</span>
+  </div>
+
+  <main class="max-w-5xl mx-auto p-4 grid gap-6 lg:grid-cols-[1fr_1fr]">
+    <section>
+      <h2 class="text-sm uppercase tracking-wide opacity-60 mb-2">Edit entry</h2>
+      <div id="editor"></div>
+    </section>
+    <section>
+      <h2 class="text-sm uppercase tracking-wide opacity-60 mb-2">My library (list view)</h2>
+      <div id="library"></div>
+    </section>
+    <section class="lg:col-span-2">
+      <h2 class="text-sm uppercase tracking-wide opacity-60 mb-2">What gets stored / sent by the API</h2>
+      <pre id="state" class="bg-base-300 rounded-box p-4 text-xs overflow-x-auto"></pre>
+    </section>
+  </main>
+
+  <!-- Variant switcher (deliberately plain, not part of the design) -->
+  <div id="switcher" class="fixed bottom-4 right-4 flex items-center gap-2 bg-black text-white text-xs px-3 py-2 rounded shadow-lg z-50">
+    <button id="prev" class="px-2 hover:opacity-70">◀</button>
+    <span id="variantLabel"></span>
+    <button id="next" class="px-2 hover:opacity-70">▶</button>
+  </div>
+
+<script>
+// ---------- Variant definitions ----------
+// Each variant stores rating as an integer (or null) in its own scale.
+const VARIANTS = {
+  A: { name: "Whole stars 1–5", max: 5,  field: "rating (1–5)" },
+  B: { name: "Half stars 0.5–5", max: 10, field: "rating (1–10 half-stars, shown ÷2)" },
+  C: { name: "Score 1–10",       max: 10, field: "rating (1–10)" },
+};
+const KEYS = Object.keys(VARIANTS);
+
+// Base data: canonical rating in half-stars (1–10) or null.
+const BASE = [
+  { id: 27205,  title: "Inception",            year: 2010, status: "watched", half: 9,  hue: 210 },
+  { id: 603,    title: "The Matrix",           year: 1999, status: "watched", half: 10, hue: 130 },
+  { id: 157336, title: "Interstellar",         year: 2014, status: "watched", half: 7,  hue: 35  },
+  { id: 680,    title: "Pulp Fiction",         year: 1994, status: "watched", half: 6,  hue: 0   },
+  { id: 13,     title: "Forrest Gump",         year: 1994, status: "watched", half: 3,  hue: 280 },
+  { id: 329865, title: "Arrival",              year: 2016, status: "watching", half: null, hue: 180 },
+  { id: 545611, title: "Everything Everywhere All at Once", year: 2022, status: "want", half: null, hue: 320 },
+];
+const toScale = (k, half) => half == null ? null : (k === "A" ? Math.round(half / 2) : half);
+
+// Independent in-memory state per variant.
+const state = {};
+for (const k of KEYS) {
+  state[k] = {
+    selected: 0,
+    minFilter: 0,
+    sortByRating: true,
+    movies: BASE.map(m => ({ ...m, rating: toScale(k, m.half) })),
+  };
+}
+
+let current = "A";
+try { const saved = localStorage.getItem("proto-rating-variant"); if (KEYS.includes(saved)) current = saved; } catch {}
+
+const STATUS_LABEL = { want: "Want to watch", watching: "Watching", watched: "Watched" };
+
+// ---------- Display helpers per variant ----------
+function displayText(k, r) {
+  if (r == null) return "Not rated";
+  if (k === "A") return "★".repeat(r) + "☆".repeat(5 - r) + `  (${r}/5)`;
+  if (k === "B") return `${(r / 2).toFixed(1)} / 5`;
+  return `${r} / 10`;
+}
+
+// Read-only compact rating for list rows — this is where variants differ most.
+function compactRating(k, r) {
+  if (r == null) return `<span class="text-xs opacity-40 italic">not rated</span>`;
+  if (k === "A") {
+    let s = `<div class="rating rating-xs">`;
+    for (let i = 1; i <= 5; i++) s += `<div class="mask mask-star-2 bg-warning" ${i === r ? 'aria-current="true"' : ""}></div>`;
+    return s + `</div>`;
+  }
+  if (k === "B") {
+    let s = `<div class="rating rating-xs rating-half">`;
+    for (let i = 1; i <= 10; i++) s += `<div class="mask mask-star-2 ${i % 2 ? "mask-half-1" : "mask-half-2"} bg-warning" ${i === r ? 'aria-current="true"' : ""}></div>`;
+    return s + `</div><span class="text-xs ml-1 opacity-70">${(r / 2).toFixed(1)}</span>`;
+  }
+  const color = r >= 8 ? "badge-success" : r >= 5 ? "badge-warning" : "badge-error";
+  return `<span class="badge ${color} badge-sm font-mono font-bold">${r}</span>`;
+}
+
+// Interactive rating input for the edit card.
+function ratingInput(k, m) {
+  const locked = m.status !== "watched";
+  const name = `rate-${k}`;
+  let html = `<div class="${locked ? "opacity-30 pointer-events-none" : ""}">`;
+  if (k === "A") {
+    html += `<div class="rating rating-lg">`;
+    html += `<input type="radio" name="${name}" class="rating-hidden" value="" ${m.rating == null ? "checked" : ""}>`;
+    for (let i = 1; i <= 5; i++)
+      html += `<input type="radio" name="${name}" value="${i}" class="mask mask-star-2 bg-warning" aria-label="${i} star" ${m.rating === i ? "checked" : ""}>`;
+    html += `</div>`;
+  } else if (k === "B") {
+    html += `<div class="rating rating-lg rating-half">`;
+    html += `<input type="radio" name="${name}" class="rating-hidden" value="" ${m.rating == null ? "checked" : ""}>`;
+    for (let i = 1; i <= 10; i++)
+      html += `<input type="radio" name="${name}" value="${i}" class="mask mask-star-2 ${i % 2 ? "mask-half-1" : "mask-half-2"} bg-warning" aria-label="${i / 2} stars" ${m.rating === i ? "checked" : ""}>`;
+    html += `</div>`;
+  } else {
+    html += `<div class="flex items-center gap-4">`;
+    html += `<div class="radial-progress text-primary font-bold" style="--value:${(m.rating || 0) * 10}; --size:4rem;" role="progressbar">${m.rating ?? "–"}</div>`;
+    html += `<div class="join flex-wrap">`;
+    for (let i = 1; i <= 10; i++)
+      html += `<button type="button" data-score="${i}" class="join-item btn btn-sm ${m.rating === i ? "btn-primary" : ""}">${i}</button>`;
+    html += `</div></div>`;
+  }
+  html += `</div>`;
+  html += `<div class="flex items-center gap-3 mt-2 text-sm">
+             <span class="opacity-70">${displayText(k, m.rating)}</span>
+             ${m.rating != null && !locked ? `<button type="button" data-clear class="link link-hover text-xs opacity-60">clear</button>` : ""}
+           </div>`;
+  if (locked) html += `<p class="text-xs text-info mt-1">Mark as <b>Watched</b> to rate this movie.</p>`;
+  return html;
+}
+
+function filterOptions(k, min) {
+  const opts = [`<option value="0" ${min === 0 ? "selected" : ""}>Any rating</option>`];
+  if (k === "A") for (let i = 1; i <= 5; i++) opts.push(`<option value="${i}" ${min === i ? "selected" : ""}>${"★".repeat(i)} & up</option>`);
+  if (k === "B") for (let i = 1; i <= 10; i++) opts.push(`<option value="${i}" ${min === i ? "selected" : ""}>${(i / 2).toFixed(1)}★ & up</option>`);
+  if (k === "C") for (let i = 1; i <= 10; i++) opts.push(`<option value="${i}" ${min === i ? "selected" : ""}>${i}+</option>`);
+  return opts.join("");
+}
+
+// ---------- Render ----------
+function render() {
+  const k = current, s = state[k], m = s.movies[s.selected];
+
+  document.getElementById("variantLabel").textContent = `${k} · ${VARIANTS[k].name}`;
+
+  document.getElementById("editor").innerHTML = `
+    <div class="card bg-base-100 shadow">
+      <div class="card-body gap-4">
+        <div class="flex gap-4">
+          <div class="w-20 h-28 rounded shrink-0" style="background:linear-gradient(160deg,hsl(${m.hue} 60% 45%),hsl(${m.hue} 60% 20%))"></div>
+          <div>
+            <h3 class="card-title">${m.title}</h3>
+            <p class="text-sm opacity-60">${m.year} · TMDB #${m.id}</p>
+          </div>
+        </div>
+        <label class="form-control">
+          <span class="text-sm mb-1">Status</span>
+          <select id="status" class="select select-bordered select-sm w-full max-w-xs">
+            ${Object.entries(STATUS_LABEL).map(([v, l]) => `<option value="${v}" ${m.status === v ? "selected" : ""}>${l}</option>`).join("")}
+          </select>
+        </label>
+        <div>
+          <span class="text-sm mb-1 block">Your rating</span>
+          <div id="ratingInput">${ratingInput(k, m)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  let rows = s.movies.map((mv, i) => ({ mv, i }))
+    .filter(({ mv }) => s.minFilter === 0 || (mv.rating != null && mv.rating >= s.minFilter));
+  if (s.sortByRating) rows.sort((a, b) => (b.mv.rating ?? -1) - (a.mv.rating ?? -1));
+
+  document.getElementById("library").innerHTML = `
+    <div class="flex flex-wrap gap-2 mb-2">
+      <select id="minFilter" class="select select-bordered select-sm">${filterOptions(k, s.minFilter)}</select>
+      <label class="label cursor-pointer gap-2 text-sm">
+        <input id="sortToggle" type="checkbox" class="toggle toggle-sm" ${s.sortByRating ? "checked" : ""}> Sort by rating
+      </label>
+    </div>
+    <ul class="list bg-base-100 rounded-box shadow">
+      ${rows.length ? rows.map(({ mv, i }) => `
+        <li class="list-row items-center cursor-pointer ${i === s.selected ? "bg-base-300" : ""}" data-select="${i}">
+          <div class="w-8 h-11 rounded" style="background:linear-gradient(160deg,hsl(${mv.hue} 60% 45%),hsl(${mv.hue} 60% 20%))"></div>
+          <div>
+            <div class="font-medium text-sm">${mv.title}</div>
+            <div class="text-xs opacity-60">${mv.year} · ${STATUS_LABEL[mv.status]}</div>
+          </div>
+          <div class="flex items-center">${compactRating(k, mv.rating)}</div>
+        </li>`).join("") : `<li class="p-4 text-sm opacity-60">No movies match this filter.</li>`}
+    </ul>
+    <p class="text-xs opacity-50 mt-2">Click a row to edit it on the left.</p>`;
+
+  document.getElementById("state").textContent =
+`Variant ${k}: ${VARIANTS[k].name}
+DB column: ${VARIANTS[k].field}, nullable, rating allowed only when status = "watched"
+
+Selected entry as JSON (GET /api/entries/${m.id}/):
+${JSON.stringify({ tmdb_id: m.id, title: m.title, status: m.status, rating: m.rating }, null, 2)}
+
+Shown to user as: ${displayText(k, m.rating)}
+Filter value stored in URL: ?min_rating=${s.minFilter || ""}
+${k === "B" ? "\nNote: B stores half-stars as an integer 1–10 to avoid decimals; API/UI must divide by 2 (or API exposes 3.5)." : ""}`;
+}
+
+// ---------- Events (delegated; DOM is re-rendered each time) ----------
+document.addEventListener("change", e => {
+  const s = state[current], m = s.movies[s.selected];
+  if (e.target.id === "status") {
+    m.status = e.target.value;
+    if (m.status !== "watched") m.rating = null; // the "Watched-only" rule
+  } else if (e.target.name === `rate-${current}`) {
+    m.rating = e.target.value === "" ? null : Number(e.target.value);
+  } else if (e.target.id === "minFilter") {
+    s.minFilter = Number(e.target.value);
+  } else if (e.target.id === "sortToggle") {
+    s.sortByRating = e.target.checked;
+  } else return;
+  render();
+});
+document.addEventListener("click", e => {
+  const s = state[current];
+  const score = e.target.closest("[data-score]");
+  const row = e.target.closest("[data-select]");
+  if (score) { s.movies[s.selected].rating = Number(score.dataset.score); render(); }
+  else if (e.target.closest("[data-clear]")) { s.movies[s.selected].rating = null; render(); }
+  else if (row) { s.selected = Number(row.dataset.select); render(); }
+});
+
+function go(delta) {
+  current = KEYS[(KEYS.indexOf(current) + delta + KEYS.length) % KEYS.length];
+  try { localStorage.setItem("proto-rating-variant", current); } catch {}
+  render();
+}
+document.getElementById("prev").onclick = () => go(-1);
+document.getElementById("next").onclick = () => go(1);
+document.addEventListener("keydown", e => {
+  if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+  if (e.key === "ArrowLeft") go(-1);
+  if (e.key === "ArrowRight") go(1);
+});
+
+render();
+</script>
+</body>
+</html>

@@ -66,8 +66,10 @@ def search_movies(query, token):
         fail(f"Request to TMDB failed: {error}")
 
     if response.status_code == 401:
-        fail("TMDB rejected the token (401). Check TMDB_READ_ACCESS_TOKEN in .env "
-             "- it should be the long 'API Read Access Token', not the short API key.")
+        fail(
+            "TMDB rejected the token (401). Check TMDB_READ_ACCESS_TOKEN in .env "
+            "- it should be the long 'API Read Access Token', not the short API key."
+        )
     if response.status_code == 429:
         fail("TMDB rate limit reached (429). Wait a few seconds and try again.")
     if not response.ok:
@@ -90,10 +92,7 @@ def format_movie(number, movie):
     overview = (movie.get("overview") or "No overview available.").replace("\n", " ")
     if len(overview) > OVERVIEW_LENGTH:
         overview = overview[:OVERVIEW_LENGTH].rstrip() + "…"
-    return (
-        f"{number}. {title} ({year})  ★ {rating:.1f}  [id {movie.get('id')}]\n"
-        f"   {overview}"
-    )
+    return f"{number}. {title} ({year})  ★ {rating:.1f}  [id {movie.get('id')}]\n   {overview}"
 
 
 def main():

@@ -1,0 +1,26 @@
+# CLAUDE.md
+
+Movie Watch Log: a Django web app and REST API where signed-in users save movies from TMDB to a personal library, annotate them, and organize them into private, public, or shared lists.
+
+## Stack
+
+- Python, Django, Django REST Framework, SQLite.
+- Package manager: uv. Lint/format: Ruff. Tests: pytest + pytest-django.
+- Styling: Tailwind CSS + DaisyUI via Tailwind's standalone CLI (no Node.js/npm); the built stylesheet is committed.
+- Interactivity: HTMX served as a local static file (not a CDN), plus `django-htmx`.
+- Secrets (TMDB Read Access Token, Django secret key) live in the git-ignored `.env`, loaded with uv's `--env-file` option.
+
+## Architecture decisions
+
+- Settings package `config`; apps `accounts` (sign-up, auth, API token), `catalog` (everything that talks to TMDB), `library` (entries, lists, sharing, DRF API). Django's default User model.
+- Only search, save, and refresh call TMDB, through a single client module. All other pages and API reads use local data only and must work with TMDB unreachable.
+- TMDB failures become specific, user-readable errors; saved data is never affected.
+- Entry status/rating rules are defined once on the model and enforced by both the website form and the API serializer.
+- List visibility rules live in one place (a `MovieList` queryset method plus a matching DRF object permission), shared by website and API. Lists a viewer can't see return 404, not 403.
+- Tests never make real TMDB network calls; the client is always faked.
+
+## References
+
+- PRD (requirements, user stories, detailed rules): `prd/movie-watch-log.md`
+- Implementation plan (phases, acceptance criteria): `plans/movie-watch-log.md`
+- Rating-scale prototype and decision: `prototypes/rating-scale.html`

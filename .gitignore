@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Tailwind standalone CLI binary (downloaded, see README)
+tools/

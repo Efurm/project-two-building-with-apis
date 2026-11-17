@@ -1,0 +1,13 @@
+/* Tailwind + DaisyUI source stylesheet.
+   Build: ./tools/tailwindcss.exe -i assets/tailwind/input.css -o static/css/app.css --minify
+   (see README). The built static/css/app.css is committed. */
+
+@import "tailwindcss" source(none);
+
+/* Scan only Django templates for class names. */
+@source "../../templates";
+@source "../../*/templates";
+
+@plugin "./daisyui.mjs" {
+  themes: light --default, dark --prefersdark;
+}
