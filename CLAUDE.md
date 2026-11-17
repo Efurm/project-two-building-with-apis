@@ -19,6 +19,20 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - List visibility rules live in one place (a `MovieList` queryset method plus a matching DRF object permission), shared by website and API. Lists a viewer can't see return 404, not 403.
 - Tests never make real TMDB network calls; the client is always faked.
 
+## Commands (verified)
+
+- Run: `uv run --env-file .env python manage.py migrate` then `... runserver`
+- Test: `uv run pytest` (no `.env` needed; settings fall back to a dev-only secret key)
+- Lint/format: `uv run ruff check .` and `uv run ruff format .`
+- CSS: after changing template classes, `./tools/tailwindcss.exe -i assets/tailwind/input.css -o static/css/app.css --minify` and commit `app.css`. The CLI binary is git-ignored; README has the download step.
+
+## Conventions in use
+
+- Templates live in the project-level `templates/` dir (`base.html` holds the navbar and TMDB attribution footer). Tailwind scans `templates/` and `*/templates/`.
+- App URLs are namespaced (`accounts:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
+- HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
+- Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`) are in the root `conftest.py`.
+
 ## References
 
 - PRD (requirements, user stories, detailed rules): `prd/movie-watch-log.md`

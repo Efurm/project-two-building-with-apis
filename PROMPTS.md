@@ -28,6 +28,19 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-16 — Logged the Phase 1 session and updated CLAUDE.md with verified commands and conventions
+
+### Prompts
+1. `log the session to PROMPTS.md with the standard prompt and update CLAUDE.md with any necessary information`
+
+### Summary
+- **Outcome:** Added this entry. Updated `CLAUDE.md` with two new sections, now that the tooling is installed and verified:
+  - **Commands (verified):** run/migrate, pytest, ruff, and the Tailwind CSS build.
+  - **Conventions in use:** project-level `templates/`; namespaced app URLs with `@login_required`; HTMX pinned at 2.0.11 with the CSRF token sent through `hx-headers`; tests in per-app `tests/` packages with shared fixtures in the root `conftest.py`.
+  - The original stack, architecture and reference sections are unchanged.
+- **Deviations:** None. The new sections hold only commands and conventions that Phase 1 already uses and tested. They add nothing new about later phases.
+- **Sideways:** The previous entry, which covers the Phase 1 prompts, was written before the commit and push. It doesn't record that Phase 1 was committed as `389cacc` and pushed to `origin/main`, so it's noted here; that entry was left unchanged, following the log rules. This entry and the `CLAUDE.md` changes are not committed yet.
+
 ## 2026-11-16 — Wrote CLAUDE.md and implemented Phase 1 (skeleton and accounts) with TDD
 
 ### Prompts
