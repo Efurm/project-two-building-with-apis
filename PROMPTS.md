@@ -28,6 +28,23 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-16 — Logged the Phase 2 session and updated CLAUDE.md with Phase 2 conventions
+
+### Prompts
+1. `Log the session in PROMPTS.md and update CLAUDE.md with any necessary information`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 2 established and tested:
+  - the `catalog:` URL namespace;
+  - the HTMX pattern: a full page that includes a partial, and views that return only the partial for `request.htmx`;
+  - the TMDB client contract: `catalog/tmdb.py`, `TMDBError` with `kind` and `message`, views calling it as `tmdb.<function>`, and errors shown as a `role="alert"` with HTTP 200;
+  - the poster URL helper and placeholder image;
+  - the automatic test fixture that sets a dummy token, blocks real HTTP, and the pattern for faking TMDB in tests.
+
+  The other sections are unchanged.
+- **Deviations:** None. Only conventions that already exist in the code were added.
+- **Sideways:** The Phase 2 entry was written before the commit and push, so it doesn't record that Phase 2 was committed as `178f296` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated with the test fixture, and this entry fixes that. This entry and the `CLAUDE.md` changes are not committed yet.
+
 ## 2026-11-16 — Implemented Phase 2 (Find movies, search only) with TDD
 
 ### Prompts

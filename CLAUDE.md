@@ -29,9 +29,11 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 ## Conventions in use
 
 - Templates live in the project-level `templates/` dir (`base.html` holds the navbar and TMDB attribution footer). Tailwind scans `templates/` and `*/templates/`.
-- App URLs are namespaced (`accounts:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
+- App URLs are namespaced (`accounts:`, `catalog:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
 - HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
-- Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`) are in the root `conftest.py`.
+- HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx`.
+- TMDB client is `catalog/tmdb.py`: every failure raises `TMDBError` with a `kind` and a user-readable `message`. Views call it as `tmdb.<function>` (so tests can monkeypatch it), catch `TMDBError`, and render the message as a DaisyUI `role="alert"` with HTTP 200 so HTMX swaps it in. `tmdb.poster_url()` builds image URLs; `static/img/poster-placeholder.svg` is the fallback.
+- Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`) are in the root `conftest.py`. An autouse fixture there sets a dummy TMDB token and makes any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
 
 ## References
 
