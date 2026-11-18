@@ -31,7 +31,8 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 
 - Templates live in the project-level `templates/` dir (`base.html` holds the navbar and TMDB attribution footer). Tailwind scans `templates/`, `*/templates/`, and `*/forms.py`.
 - Form fields render inside `<fieldset class="fieldset" data-field="<name>">` with that field's errors directly below the input (tests locate errors by `data-field`).
-- Entry rules: save entries through a form/`full_clean()`, never raw `.update()`. `Entry.clean()` rejects rating/date watched/times watched > 0 per field unless Watched, and clears them when the last-saved status (`_saved_status`) was Watched. The API serializer must reuse this, not reimplement it.
+- Entry rules: save entries through a form/`full_clean()` or the API serializer, never raw `.update()`. `Entry.clean()` rejects rating/date watched/times watched > 0 per field unless Watched, and clears them when the last-saved status (`_saved_status`) was Watched. `EntrySerializer.validate()` runs `Entry.clean()` on a copy (DRF does not call `clean()` itself); don't reimplement the rule.
+- API (DRF) lives in `library/api/` under `/api/` (router; `/api/entries/` now, lists next). Auth: `TokenAuthentication` first, then session (so failures are 401 + `WWW-Authenticate: Token`); `IsAuthenticated` and 20-per-page `PageNumberPagination` are defaults in `REST_FRAMEWORK`. Viewsets scope `get_queryset()` to the requester (others' objects 404) and list endpoints reuse `browse_entries`. Errors use DRF's `{"detail": ...}` / field-error shapes; TMDB failures on create become 503 `ProviderUnavailable`. Tokens are managed on `/accounts/me/` (`accounts:me`); tests use the `api_client` and `token_for` fixtures (or `force_authenticate`).
 - Other users' objects return 404 (look up with `user=request.user` in `get_object_or_404`), never 403.
 - `static/js/app.js` holds small vanilla-JS enhancements (watched-only input toggling, Clear rating); keep pages working without it.
 - App URLs are namespaced (`accounts:`, `catalog:`, `library:`, `lists:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`). The `lists:` routes (`/lists/`) and the top-level `profile` (`/u/<username>/`, public) and `shared` (`/shared/`) pages live in the `library` app (`library/list_urls.py`, `library/list_views.py`).
@@ -49,7 +50,7 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - Duplicates rely on DB unique constraints: create inside `transaction.atomic()` and handle `IntegrityError`, rather than check-then-create.
 - Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`, `make_movie`) are in the root `conftest.py`. Autouse fixtures there use a fast password hasher, set a dummy TMDB token, and make any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
 - Ad-hoc checks against the real DB: `uv run --env-file .env python manage.py shell -c "exec(open(path).read())"` (piping into `shell` doesn't work); call `django.test.utils.setup_test_environment()` before reading `response.context`, set `PYTHONIOENCODING=utf-8` before printing ★, and delete any data created in a `finally` block.
-- Git Bash heredocs break on non-ASCII text (✕, curly quotes): write files containing it with the Write/Edit tools instead.
+- Bash-tool heredocs break on non-ASCII text (✕, curly quotes) and on apostrophes inside quoted heredocs: write multi-line file content with the Write/Edit tools instead.
 
 ## References
 
