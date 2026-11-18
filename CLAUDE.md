@@ -34,7 +34,10 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - Entry rules: save entries through a form/`full_clean()`, never raw `.update()`. `Entry.clean()` rejects rating/date watched/times watched > 0 per field unless Watched, and clears them when the last-saved status (`_saved_status`) was Watched. The API serializer must reuse this, not reimplement it.
 - Other users' objects return 404 (look up with `user=request.user` in `get_object_or_404`), never 403.
 - `static/js/app.js` holds small vanilla-JS enhancements (watched-only input toggling, Clear rating); keep pages working without it.
-- App URLs are namespaced (`accounts:`, `catalog:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
+- App URLs are namespaced (`accounts:`, `catalog:`, `library:`, `lists:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`). The `lists:` routes (`/lists/`) live in the `library` app (`library/list_urls.py`, `library/list_views.py`).
+- Lists: `MovieList` (owner, name) holds entries through `ListItem` (unique list + entry). Deleting a list or an entry removes only the `ListItem` rows, never entries or lists. Only the owner's own entries may be added to a list: look the entry up with `user=request.user` (404 otherwise); the API must do the same. `visibility`/`shared_with` are not added yet (Phase 8).
+- Confirmations are DaisyUI modals loaded with `hx-get` into the `#modal` slot in `base.html`; the confirming POST redirects (`HttpResponseClientRedirect` for HTMX) with a Django message. Each has a full-page fallback template.
+- The shared browse partial accepts optional `card_template` and `empty_message` (list pages use `lists/partials/list_entry_card.html`).
 - HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
 - HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx` (but the full page for `request.htmx.history_restore_request`).
 - Browsing entries (library, list pages, API) goes through `library/browse.py`: `clean_params` (`q`, `status`, `genre` = TMDB genre id, `min_rating`, `decade`, `sort`, `dir`, `page`; invalid values ignored), `browse_entries` (search/filter/sort, missing values last), and `browse_context` (20 per page + controls). Pass the unfiltered, already-scoped queryset (e.g. `user=request.user`). The website renders it with `library/partials/browse.html` inside `#library-browse` (HTMX swaps with `hx-push-url`; page links use `{% querystring %}`).
@@ -45,6 +48,7 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - Duplicates rely on DB unique constraints: create inside `transaction.atomic()` and handle `IntegrityError`, rather than check-then-create.
 - Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`, `make_movie`) are in the root `conftest.py`. Autouse fixtures there use a fast password hasher, set a dummy TMDB token, and make any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
 - Ad-hoc checks against the real DB: `uv run --env-file .env python manage.py shell -c "exec(open(path).read())"` (piping into `shell` doesn't work); call `django.test.utils.setup_test_environment()` before reading `response.context`, set `PYTHONIOENCODING=utf-8` before printing ★, and delete any data created in a `finally` block.
+- Git Bash heredocs break on non-ASCII text (✕, curly quotes): write files containing it with the Write/Edit tools instead.
 
 ## References
 

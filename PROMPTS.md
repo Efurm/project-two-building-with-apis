@@ -28,6 +28,23 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Logged the Phase 7 session and updated CLAUDE.md with Phase 7 conventions
+
+### Prompts
+1. `log the session to PROMPTS.md, update CLAUDE.md, then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 7 established and tested:
+  - the `lists:` namespace, and that its routes live in the `library` app (`list_urls.py`, `list_views.py`);
+  - the list model rules: `ListItem` is unique per list and entry, deletes remove only memberships, and only your own entries can be added (looked up with `user=request.user`, and the API must do the same); `visibility` and `shared_with` are still to come in Phase 8;
+  - the confirmation-modal pattern: `hx-get` into `#modal`, a redirect with a message (`HttpResponseClientRedirect` for HTMX), and full-page fallbacks;
+  - the browse partial's optional `card_template` and `empty_message`;
+  - a workflow note that Git Bash heredocs break on non-ASCII text, so files containing it should be written with the Write and Edit tools.
+
+  Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions and lessons already seen in this project were added.
+- **Sideways:** The Phase 7 entry was written before its commit and push, so it doesn't record that Phase 7 was committed as `54fb65a` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated, and this entry fixes that.
+
 ## 2026-11-17 — Implemented Phase 7 (named lists, owner only) with TDD
 
 ### Prompts
