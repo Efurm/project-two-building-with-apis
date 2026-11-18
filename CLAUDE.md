@@ -32,8 +32,11 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - App URLs are namespaced (`accounts:`, `catalog:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
 - HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
 - HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx`.
-- TMDB client is `catalog/tmdb.py`: every failure raises `TMDBError` with a `kind` and a user-readable `message`. Views call it as `tmdb.<function>` (so tests can monkeypatch it), catch `TMDBError`, and render the message as a DaisyUI `role="alert"` with HTTP 200 so HTMX swaps it in. `tmdb.poster_url()` builds image URLs; `static/img/poster-placeholder.svg` is the fallback.
-- Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`) are in the root `conftest.py`. An autouse fixture there sets a dummy TMDB token and makes any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
+- TMDB client is `catalog/tmdb.py`: every failure raises `TMDBError` with a `kind` and a user-readable `message`. Views call it as `tmdb.<function>` (so tests can monkeypatch it), catch `TMDBError`, and render the message as a DaisyUI `role="alert"` with HTTP 200 so HTMX swaps it in.
+- Getting a Movie for a TMDB id always goes through `catalog.services.get_or_fetch_movie` (stored row first, TMDB only if missing; raises `TMDBError`). `_store_details` there copies TMDB details + genres onto a Movie and is meant for reuse by refresh.
+- Posters: render with `{% include "partials/poster.html" with url=... title=... %}` (TMDB URL via `Movie.poster_url`, placeholder on missing or failed load).
+- Duplicates rely on DB unique constraints: create inside `transaction.atomic()` and handle `IntegrityError`, rather than check-then-create.
+- Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`, `make_movie`) are in the root `conftest.py`. Autouse fixtures there use a fast password hasher, set a dummy TMDB token, and make any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
 
 ## References
 

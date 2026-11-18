@@ -28,6 +28,22 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Logged the Phase 3 session and updated CLAUDE.md with Phase 3 conventions
+
+### Prompts
+1. `log the changes to PROMPTS.md and insert any necessary inormation into CLAUDE.md and then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 3 established and tested:
+  - every Movie lookup by TMDB id goes through `catalog.services.get_or_fetch_movie`, and `_store_details` is there for refresh to reuse;
+  - posters are rendered with `partials/poster.html`;
+  - duplicates are prevented by database unique constraints, using `transaction.atomic()` plus `IntegrityError` rather than check-then-create;
+  - the new `make_movie` fixture and the automatic fast-password-hasher fixture.
+
+  The poster-placeholder note moved from the TMDB client bullet to the new poster bullet. Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions already present in the code were added.
+- **Sideways:** The Phase 3 entry was written before its commit and push, so it doesn't record that Phase 3 was committed as `7f632c1` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated, and this entry fixes that.
+
 ## 2026-11-17 — Implemented Phase 3 (save to library and basic library page) with TDD
 
 ### Prompts
