@@ -1,0 +1,27 @@
+<section class="card-body gap-3" data-testid="entry-panel">
+  <div class="flex items-center justify-between gap-2">
+    <h2 class="card-title">My notes &amp; rating</h2>
+    <a href="{% url 'library:entry_edit' entry.pk %}" class="btn btn-sm"
+       hx-get="{% url 'library:entry_edit' entry.pk %}" hx-target="#entry-panel">Edit</a>
+  </div>
+  <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+    <dt class="opacity-70">Status</dt>
+    <dd>{% include "library/partials/status_badge.html" %}</dd>
+    <dt class="opacity-70">Rating</dt>
+    <dd>{% include "library/partials/stars.html" with rating=entry.rating %}</dd>
+    {% if entry.status == "watched" %}
+      <dt class="opacity-70">Date watched</dt>
+      <dd>{{ entry.date_watched|date:"M j, Y"|default:"—" }}</dd>
+      <dt class="opacity-70">Times watched</dt>
+      <dd>{{ entry.times_watched }}</dd>
+    {% endif %}
+  </dl>
+  <div>
+    <h3 class="text-sm opacity-70 mb-1">Notes</h3>
+    {% if entry.notes %}
+      <p class="whitespace-pre-line" data-testid="entry-notes">{{ entry.notes }}</p>
+    {% else %}
+      <p class="opacity-60 italic">No notes yet.</p>
+    {% endif %}
+  </div>
+</section>

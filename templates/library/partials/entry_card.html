@@ -1,0 +1,26 @@
+<article class="card card-side bg-base-100 shadow-sm" data-testid="entry-card" id="entry-card-{{ entry.pk }}">
+  <figure class="w-24 shrink-0 self-start">
+    <a href="{% url 'library:entry_detail' entry.pk %}" tabindex="-1">
+      {% include "partials/poster.html" with url=entry.movie.poster_url title=entry.movie.title %}
+    </a>
+  </figure>
+  <div class="card-body p-4 gap-2">
+    <h2 class="card-title text-base">
+      <a class="link link-hover" href="{% url 'library:entry_detail' entry.pk %}">{{ entry.movie.title }}</a>
+      {% if entry.movie.year %}<span class="font-normal opacity-60">({{ entry.movie.year }})</span>{% endif %}
+    </h2>
+    <div class="text-sm">{% include "library/partials/stars.html" with rating=entry.rating %}</div>
+    <form method="post" action="{% url 'library:entry_status' entry.pk %}"
+          hx-post="{% url 'library:entry_status' entry.pk %}" hx-trigger="change"
+          hx-target="#entry-card-{{ entry.pk }}" hx-swap="outerHTML">
+      {% csrf_token %}
+      <select name="status" class="select select-sm w-auto" aria-label="Status for {{ entry.movie.title }}">
+        {% for value, label in entry.Status.choices %}
+          <option value="{{ value }}" {% if entry.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button type="submit" class="btn btn-sm">Update</button></noscript>
+    </form>
+    {% if status_error %}<p role="alert" class="text-error text-sm">Could not update the status.</p>{% endif %}
+  </div>
+</article>

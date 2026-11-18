@@ -4,9 +4,11 @@
 
 @import "tailwindcss" source(none);
 
-/* Scan only Django templates for class names. */
+/* Scan only Django templates (and form widget classes) for class names. */
 @source "../../templates";
 @source "../../*/templates";
+/* Widget classes set in Python form definitions. */
+@source "../../*/forms.py";
 
 @plugin "./daisyui.mjs" {
   themes: light --default, dark --prefersdark;

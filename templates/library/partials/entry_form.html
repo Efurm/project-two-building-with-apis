@@ -1,0 +1,47 @@
+{% with watched=form.status.value %}
+<form method="post" action="{% url 'library:entry_edit' entry.pk %}" class="card-body gap-1"
+      data-testid="entry-form" data-entry-form
+      hx-post="{% url 'library:entry_edit' entry.pk %}" hx-target="#entry-panel">
+  {% csrf_token %}
+  <h2 class="card-title mb-2">Edit my notes &amp; rating</h2>
+  {% for error in form.non_field_errors %}
+    <div role="alert" class="alert alert-error alert-soft mb-3">{{ error }}</div>
+  {% endfor %}
+
+  {% for field in form %}
+    <fieldset class="fieldset" data-field="{{ field.name }}">
+      {% if field.name == "rating" %}
+        <legend class="fieldset-legend">Rating</legend>
+        <div class="flex items-center gap-3">
+          <div class="rating rating-lg">
+            <input type="radio" name="rating" value="" class="rating-hidden" aria-label="Unrated"
+                   data-watched-only {% if watched != "watched" %}disabled{% endif %}
+                   {% if not field.value %}checked{% endif %}>
+            {% for n in "12345" %}
+              <input type="radio" name="rating" value="{{ n }}" class="mask mask-star-2 bg-warning"
+                     aria-label="{{ n }} star{{ n|pluralize }}"
+                     data-watched-only {% if watched != "watched" %}disabled{% endif %}
+                     {% if field.value|stringformat:"s" == n %}checked{% endif %}>
+            {% endfor %}
+          </div>
+          <button type="button" class="btn btn-ghost btn-xs" data-clear-rating data-watched-only
+                  {% if watched != "watched" %}disabled{% endif %}>Clear</button>
+        </div>
+        <p class="label">Rate a movie once it's marked Watched.</p>
+      {% else %}
+        <label class="fieldset-legend" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      {% endif %}
+      {% for error in field.errors %}
+        <p class="label text-error">{{ error }}</p>
+      {% endfor %}
+    </fieldset>
+  {% endfor %}
+
+  <div class="card-actions justify-end mt-3">
+    <a href="{% url 'library:entry_detail' entry.pk %}" class="btn btn-ghost"
+       hx-get="{% url 'library:entry_detail' entry.pk %}" hx-target="#entry-panel">Cancel</a>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </div>
+</form>
+{% endwith %}

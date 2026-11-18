@@ -6,6 +6,7 @@
   <title>{% block title %}Movie Watch Log{% endblock %} · Movie Watch Log</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
 </head>
 <body class="min-h-screen flex flex-col bg-base-200" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="navbar bg-base-100 shadow-sm px-4 gap-2">

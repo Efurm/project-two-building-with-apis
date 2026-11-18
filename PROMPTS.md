@@ -28,6 +28,44 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 4 (entry page and in-place editing) with TDD
+
+### Prompts
+1. `/implement phase 4`
+2. `go ahead` (approved three TDD behaviors and the proposed design: the model remembers its last-saved status, so changing away from Watched clears the watched-only fields while a never-Watched entry with them filled in is rejected)
+3. `yes pass it` (approved the RED per-field model-rule test)
+4. `yes` (moved on to behavior 2)
+5. `yes pass it` (approved the RED clear-on-leaving-Watched test)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED invalid-save test, including a `data-field` wrapper for each form field)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **The rule, defined once:** `Entry.clean()` puts it in one place. Rating, date watched and times watched above 0 are rejected, each against its own field, unless the entry is Watched. If the entry's last-saved status (`_saved_status`, tracked in `__init__`/`save`) was Watched, the three fields are cleared instead.
+  - **Forms:** `EntryForm` uses star radios with an "Unrated" choice; watched-only inputs are disabled in the HTML unless Watched, and missing inputs mean empty. `EntryStatusForm` backs the library card's status control.
+  - **Pages and endpoints:**
+    - Entry page `/library/entries/<pk>/`: poster, details (date, runtime, score, genres, overview) and a panel showing status, stars, date, count and plain-text notes with line breaks kept. HTMX requests get just the panel.
+    - `/library/entries/<pk>/edit/`: HTMX Edit, Save and Cancel swaps in `#entry-panel`, with a full-page fallback that redirects after a valid POST.
+    - `POST /library/entries/<pk>/status/`: the library card's in-place status control, which returns the updated card.
+    - Other users' entries return 404 everywhere.
+  - **Library cards:** moved to a partial, now link to the entry page and show stars.
+  - **Supporting files:** `static/js/app.js` (enables or disables watched-only inputs and powers the Clear rating button), plus status-badge and star partials.
+  - **Tailwind:** now also scans `*/forms.py` for widget classes.
+  - **Checks:** 85 tests pass, ruff is clean, no migrations are missing, and the CSS was rebuilt. A live check against the real database exercised detail, edit, save and the card status control (leaving Watched cleared the fields).
+- **Deviations:** The user approved the design, all three behaviors and the RED tests without changes. The agent's own choices:
+  - Endpoints `/library/entries/<pk>/edit/` and `/status/` (the plan fixed only the entry page URL).
+  - A small vanilla-JS file for enabling or disabling the star inputs, which HTMX alone can't do.
+  - Read-only stars shown as ★/☆ text with an aria-label.
+  - An invalid card status leaves the entry unchanged and shows an inline error.
+  - Non-HTMX status changes redirect to the library.
+- **Sideways:**
+  - Behavior 3's test first checked kept notes as `>Changed notes.<`. Django's textarea puts a newline after the tag, so the check was repaired mechanically to look for `Changed notes.</textarea>` in the notes field.
+  - The first CSS build was missing DaisyUI's `textarea` class, because classes set in `forms.py` weren't scanned. Spotted while checking the CSS, and fixed by adding `@source "../../*/forms.py"`. The comment edit left a slightly repetitive comment in `input.css`.
+  - Ruff's reformat fixed one line that was too long in a new test.
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser, so the star widget's look and the JS toggling weren't checked visually.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 3 session and updated CLAUDE.md with Phase 3 conventions
 
 ### Prompts

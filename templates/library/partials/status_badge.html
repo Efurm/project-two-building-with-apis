@@ -1,0 +1,1 @@
+<span class="badge badge-soft {% if entry.status == 'watched' %}badge-success{% elif entry.status == 'watching' %}badge-warning{% else %}badge-info{% endif %}">{{ entry.get_status_display }}</span>
