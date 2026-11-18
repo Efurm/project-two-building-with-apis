@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}My lists{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">My lists</h1>
+
+<form method="post" action="{% url 'lists:index' %}" class="card bg-base-100 shadow-sm mb-6" novalidate
+      data-testid="new-list-form">
+  <div class="card-body p-4">
+    {% csrf_token %}
+    <fieldset class="fieldset" data-field="name">
+      <label class="fieldset-legend" for="{{ form.name.id_for_label }}">New list</label>
+      <div class="join w-full">
+        {{ form.name }}
+        <button type="submit" class="btn btn-primary join-item">Create</button>
+      </div>
+      {% for error in form.name.errors %}<p class="label text-error">{{ error }}</p>{% endfor %}
+    </fieldset>
+  </div>
+</form>
+
+{% if lists %}
+  <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {% for movie_list in lists %}
+      <li class="card bg-base-100 shadow-sm" data-testid="list-card">
+        <a href="{% url 'lists:detail' movie_list.pk %}" class="card-body p-4 hover:bg-base-300 rounded-box">
+          <h2 class="card-title text-base">{{ movie_list.name }}</h2>
+          <p class="text-sm opacity-70">{{ movie_list.item_count }} movie{{ movie_list.item_count|pluralize }}</p>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center">
+      <p class="text-lg">You have no lists yet.</p>
+      <p class="opacity-70">Create one above, then add movies to it from their pages in your library.</p>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

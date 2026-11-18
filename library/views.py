@@ -1,10 +1,13 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from django_htmx.http import HttpResponseClientRedirect
 
 from .browse import browse_context
 from .forms import EntryForm, EntryStatusForm
+from .list_views import entry_lists_context
 from .models import Entry
 
 
@@ -33,7 +36,8 @@ def _own_entry(request, pk):
 
 
 def _detail_page(request, entry, form=None):
-    return render(request, "library/entry_detail.html", {"entry": entry, "form": form})
+    context = {"form": form, **entry_lists_context(entry)}
+    return render(request, "library/entry_detail.html", context)
 
 
 @login_required
@@ -85,3 +89,23 @@ def entry_status(request, pk):
     return render(
         request, "library/partials/entry_card.html", {"entry": entry, "status_error": form.errors}
     )
+
+
+@login_required
+def entry_delete(request, pk):
+    """GET: confirm deleting an entry, saying how many lists it is in. POST: delete it.
+
+    Deleting an entry cascades to its list items; the lists themselves stay.
+    """
+    entry = _own_entry(request, pk)
+    if request.method == "POST":
+        title = entry.movie.title
+        entry.delete()
+        messages.success(request, f"Deleted “{title}” from your library.")
+        if request.htmx:
+            return HttpResponseClientRedirect(reverse("library:index"))
+        return redirect("library:index")
+    context = {"entry": entry, "list_count": entry.list_items.count()}
+    if request.htmx:
+        return render(request, "library/partials/entry_delete_confirm.html", context)
+    return render(request, "library/entry_delete.html", context)

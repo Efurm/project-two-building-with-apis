@@ -28,6 +28,50 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 7 (named lists, owner only) with TDD
+
+### Prompts
+1. `/implement phase 7`
+2. `yes` (approved three TDD behaviors: only your own entries can be added to your lists; deleting a list removes its items but keeps the entries; the entry-delete confirmation counts lists, and confirming deletes the entry and its items)
+3. `yes pass it` (approved the RED own-entries-only test)
+4. `yes` (moved on to behavior 2)
+5. `yes pass it` (approved the RED delete-list test)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED entry-delete count test)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **Models and migration `0002_movielist_listitem`:** `MovieList` has an owner, name, timestamps and `entries` linked through `ListItem`. `ListItem` has a list, an entry and `added_at`, a list can hold an entry only once, and deleting either side removes only the item.
+  - **Views in `library/list_views.py`, under `/lists/` (`lists:` namespace):**
+    - an index with a create form and movie counts for each list;
+    - a list page reusing the shared browse block, limited to that list, with cards showing status, stars, notes and "Remove from list" (the card disappears through `hx-swap="delete"`);
+    - an inline HTMX rename;
+    - delete with a DaisyUI confirmation modal and `HX-Redirect`;
+    - add and remove item endpoints.
+
+    Every lookup is limited to the requester (`_own_list`, `_own_entry`), so other users' lists and entries return 404.
+  - **Entry page:** an "In my lists" panel (remove buttons and an "Add to list" dropdown, no JavaScript needed), plus a "Delete from library" modal that says how many lists the entry is in.
+  - **Supporting changes:**
+    - the browse partial takes an optional `card_template`;
+    - `base.html` has a "Lists" navbar link and a `#modal` slot;
+    - the new models are registered in the admin.
+  - **Checks:** 155 tests pass (3 TDD plus ordinary tests for the index and counts, create and rename with validation, the delete confirmation, `HX-Redirect`, duplicate adds being ignored, an entry in several lists, removal from either page, the list page's contents, browse settings and empty state, the entry-page panel, entry delete without lists and with the non-HTMX message, 404s for seven list routes and entry delete, sign-in, and the navbar link). Ruff is clean, no migrations are missing, and the CSS was rebuilt. A live check on the real database exercised create, add (including a refused foreign entry), the list page, rename, entry delete and list delete, and the data was cleaned up.
+- **Deviations:** The user approved all three behaviors and RED tests without changes. The agent's own choices:
+  - **Scope:** `visibility` and `shared_with` were left for Phase 8, because the plan says lists are private-only in this phase. The PRD's model includes them, so Phase 8 will need its own migration.
+  - **Endpoints:** rename `/lists/<pk>/rename/`, delete `/lists/<pk>/delete/` (GET confirms, POST deletes), add item `/lists/<pk>/items/add/`, remove item `/lists/<pk>/items/<entry_pk>/remove/`, and entry delete `/library/entries/<pk>/delete/`.
+  - **Behavior:** a duplicate add is quietly ignored. A list's "Date added" sort uses the date the movie entered your library, not the date it joined the list.
+- **Sideways:**
+  - Behavior 2's test passed as soon as the view called `.delete()`, because the model's delete settings already did the work. This was said up front; the test guards that choice.
+  - Two shell heredocs containing non-ASCII characters (✕, “ ”) failed in Git Bash: one cut a template short and the other didn't run. The template was rewritten with the Write tool and the tests were appended with Edit.
+  - The first add-to-list design used inline JavaScript to rewrite the form's URL. It was replaced with a no-JavaScript dropdown of one form per list.
+  - The rename form's Cancel first used `hx-get` on the list page into `body`, which would have swapped in only the browse partial. It was caught by reading the template back and made a plain link.
+  - A blank list name showed Django's generic "This field is required." The new test caught it, and it was fixed by setting the field's required message.
+  - Ruff's formatter split two lines that were too long.
+  - The auto-generated migration was renamed before being committed or applied.
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser, so the modals and dropdown weren't checked visually.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 6 session and updated CLAUDE.md with Phase 6 conventions
 
 ### Prompts

@@ -1,0 +1,16 @@
+<dialog class="modal modal-open" open data-testid="delete-list-confirm" aria-labelledby="delete-list-title">
+  <div class="modal-box">
+    <h3 id="delete-list-title" class="text-lg font-bold">Delete the list “{{ movie_list.name }}”?</h3>
+    <p class="py-3">
+      {% if item_count %}Its {{ item_count }} movie{{ item_count|pluralize }} will stay in your library.{% else %}The list is empty.{% endif %}
+    </p>
+    <div class="modal-action">
+      <a href="{% url 'lists:detail' movie_list.pk %}" class="btn"
+         hx-on:click="event.preventDefault(); this.closest('dialog').remove()">Cancel</a>
+      <form method="post" action="{% url 'lists:delete' movie_list.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-error">Delete list</button>
+      </form>
+    </div>
+  </div>
+</dialog>

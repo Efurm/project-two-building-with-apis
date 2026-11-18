@@ -1,0 +1,26 @@
+<article class="card card-side bg-base-100 shadow-sm" data-testid="entry-card" id="list-entry-{{ entry.pk }}">
+  <figure class="w-24 shrink-0 self-start">
+    {% include "partials/poster.html" with url=entry.movie.poster_url title=entry.movie.title %}
+  </figure>
+  <div class="card-body p-4 gap-2">
+    <h2 class="card-title text-base">
+      <a class="link link-hover" href="{% url 'library:entry_detail' entry.pk %}">{{ entry.movie.title }}</a>
+      {% if entry.movie.year %}<span class="font-normal opacity-60">({{ entry.movie.year }})</span>{% endif %}
+    </h2>
+    <div class="flex flex-wrap items-center gap-2 text-sm">
+      {% include "library/partials/status_badge.html" %}
+      {% include "library/partials/stars.html" with rating=entry.rating %}
+    </div>
+    {% if entry.notes %}
+      <p class="text-sm opacity-80 whitespace-pre-line" data-testid="entry-notes">{{ entry.notes|truncatechars:240 }}</p>
+    {% endif %}
+    <div class="card-actions justify-end">
+      <form method="post" action="{% url 'lists:remove_item' movie_list.pk entry.pk %}"
+            hx-post="{% url 'lists:remove_item' movie_list.pk entry.pk %}"
+            hx-target="#list-entry-{{ entry.pk }}" hx-swap="delete">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-xs">Remove from list</button>
+      </form>
+    </div>
+  </div>
+</article>

@@ -1,7 +1,7 @@
 {% comment %}
   Shared browse block: controls + results + pagination for a set of entries.
   Swapped as a whole by HTMX into #library-browse; every setting lives in the URL.
-  Context comes from library.browse.browse_context (plus optional empty_message).
+  Context comes from library.browse.browse_context (plus optional empty_message and card_template).
 {% endcomment %}
 {% if not has_any %}
   <div class="card bg-base-100 shadow">
@@ -74,7 +74,7 @@
 {% if entries %}
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% for entry in entries %}
-      {% include "library/partials/entry_card.html" %}
+      {% include card_template|default:"library/partials/entry_card.html" %}
     {% endfor %}
   </div>
 {% else %}

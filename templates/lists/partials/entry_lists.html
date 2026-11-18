@@ -1,0 +1,45 @@
+<section id="entry-lists" class="card bg-base-100 shadow-sm" data-testid="entry-lists">
+  <div class="card-body gap-3">
+    <h2 class="card-title">In my lists</h2>
+    {% if member_lists %}
+      <ul class="flex flex-wrap gap-2">
+        {% for movie_list in member_lists %}
+          <li class="badge badge-lg gap-1 pr-0">
+            <a class="link link-hover" href="{% url 'lists:detail' movie_list.pk %}">{{ movie_list.name }}</a>
+            <form method="post" action="{% url 'lists:remove_item' movie_list.pk entry.pk %}"
+                  hx-post="{% url 'lists:remove_item' movie_list.pk entry.pk %}"
+                  hx-target="#entry-lists" hx-swap="outerHTML">
+              {% csrf_token %}
+              <input type="hidden" name="panel" value="1">
+              <button type="submit" class="btn btn-ghost btn-xs btn-circle"
+                      aria-label="Remove from {{ movie_list.name }}">✕</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="opacity-60 text-sm">Not in any of your lists.</p>
+    {% endif %}
+
+    {% if other_lists %}
+      <div class="dropdown" data-testid="add-to-list">
+        <div tabindex="0" role="button" class="btn btn-sm btn-primary">Add to list ▾</div>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-56 p-2 shadow">
+          {% for movie_list in other_lists %}
+            <li>
+              <form method="post" action="{% url 'lists:add_item' movie_list.pk %}"
+                    hx-post="{% url 'lists:add_item' movie_list.pk %}"
+                    hx-target="#entry-lists" hx-swap="outerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="entry" value="{{ entry.pk }}">
+                <button type="submit" class="w-full text-left">{{ movie_list.name }}</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% elif not member_lists %}
+      <p class="text-sm"><a class="link" href="{% url 'lists:index' %}">Create a list</a> to organize your movies.</p>
+    {% endif %}
+  </div>
+</section>

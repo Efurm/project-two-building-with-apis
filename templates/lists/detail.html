@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ movie_list.name }}{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2">
+  <ul>
+    <li><a href="{% url 'lists:index' %}">My lists</a></li>
+    <li>{{ movie_list.name }}</li>
+  </ul>
+</div>
+{% include "lists/partials/list_header.html" %}
+<div id="library-browse">
+  {% include "library/partials/browse.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+<form id="list-header" method="post" action="{% url 'lists:rename' movie_list.pk %}" class="mb-4" novalidate
+      data-testid="rename-form"
+      hx-post="{% url 'lists:rename' movie_list.pk %}" hx-target="#list-header" hx-swap="outerHTML">
+  {% csrf_token %}
+  <fieldset class="fieldset" data-field="name">
+    <label class="fieldset-legend" for="{{ form.name.id_for_label }}">List name</label>
+    <div class="join w-full max-w-md">
+      {{ form.name }}
+      <button type="submit" class="btn btn-primary join-item">Save</button>
+      <a href="{% url 'lists:detail' movie_list.pk %}" class="btn join-item">Cancel</a>
+    </div>
+    {% for error in form.name.errors %}<p class="label text-error">{{ error }}</p>{% endfor %}
+  </fieldset>
+</form>

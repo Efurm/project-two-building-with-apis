@@ -1,0 +1,17 @@
+<dialog class="modal modal-open" open data-testid="delete-confirm" aria-labelledby="delete-entry-title">
+  <div class="modal-box">
+    <h3 id="delete-entry-title" class="text-lg font-bold">Delete {{ entry.movie.title }} from your library?</h3>
+    <p class="py-2">Your status, rating, and notes for it will be lost.</p>
+    {% if list_count %}
+      <p class="py-2 font-semibold">It will also be removed from {{ list_count }} of your list{{ list_count|pluralize }}.</p>
+    {% endif %}
+    <div class="modal-action">
+      <a href="{% url 'library:entry_detail' entry.pk %}" class="btn"
+         hx-on:click="event.preventDefault(); this.closest('dialog').remove()">Cancel</a>
+      <form method="post" action="{% url 'library:entry_delete' entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-error">Delete</button>
+      </form>
+    </div>
+  </div>
+</dialog>

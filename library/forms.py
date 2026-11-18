@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Entry
+from .models import Entry, MovieList
 
 RATING_CHOICES = [(n, f"{n} star{'s' if n > 1 else ''}") for n in range(1, 6)]
 
@@ -50,3 +50,21 @@ class EntryStatusForm(forms.ModelForm):
     class Meta:
         model = Entry
         fields = ["status"]
+
+
+class MovieListForm(forms.ModelForm):
+    """Create or rename a list."""
+
+    class Meta:
+        model = MovieList
+        fields = ["name"]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={"class": "input w-full", "placeholder": "e.g. Date night", "maxlength": 100}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # The field strips whitespace, so a blank or all-space name fails "required".
+        self.fields["name"].error_messages["required"] = "Give the list a name."

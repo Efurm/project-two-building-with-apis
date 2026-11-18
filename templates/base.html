@@ -17,6 +17,7 @@
       {% if user.is_authenticated %}
         <a href="{% url 'catalog:find' %}" class="btn btn-ghost btn-sm">Find movies</a>
         <a href="{% url 'library:index' %}" class="btn btn-ghost btn-sm">Library</a>
+        <a href="{% url 'lists:index' %}" class="btn btn-ghost btn-sm">Lists</a>
         <span class="text-sm opacity-70 px-2">{{ user.username }}</span>
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
@@ -38,6 +39,8 @@
     {% endfor %}
     {% block content %}{% endblock %}
   </main>
+
+  <div id="modal"></div>
 
   <footer class="footer footer-center p-4 bg-base-100 text-base-content text-sm">
     <p data-testid="tmdb-attribution">

@@ -73,3 +73,38 @@ class Entry(models.Model):
             errors["times_watched"] = "Times watched must be 0 unless the movie is marked Watched."
         if errors:
             raise ValidationError(errors)
+
+
+class MovieList(models.Model):
+    """A user's named list of their own library entries."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="movie_lists"
+    )
+    name = models.CharField(max_length=100)
+    entries = models.ManyToManyField(Entry, through="ListItem", related_name="movie_lists")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "pk"]
+
+    def __str__(self):
+        return self.name
+
+
+class ListItem(models.Model):
+    """One entry's membership in one list. Deleting either side removes only this row."""
+
+    movie_list = models.ForeignKey(MovieList, on_delete=models.CASCADE, related_name="items")
+    entry = models.ForeignKey(Entry, on_delete=models.CASCADE, related_name="list_items")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["added_at", "pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["movie_list", "entry"], name="unique_entry_per_list"),
+        ]
+
+    def __str__(self):
+        return f"{self.entry.movie} in {self.movie_list}"

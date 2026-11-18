@@ -18,6 +18,13 @@
       {% include "library/partials/entry_panel.html" %}
     {% endif %}
   </div>
+
+  {% include "lists/partials/entry_lists.html" %}
+
+  <div class="flex justify-end">
+    <a href="{% url 'library:entry_delete' entry.pk %}" class="btn btn-sm btn-error btn-outline"
+       hx-get="{% url 'library:entry_delete' entry.pk %}" hx-target="#modal">Delete from library</a>
+  </div>
 </div>
 {% endwith %}
 {% endblock %}
