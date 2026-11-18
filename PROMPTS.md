@@ -28,6 +28,23 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Logged the Phase 4 session and updated CLAUDE.md with Phase 4 conventions
+
+### Prompts
+1. `log the session to PROMTS.md and then update CLAUDE.md with any necessary information and then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated `CLAUDE.md` with what Phase 4 established and tested:
+  - the CSS rebuild note and the template bullet now mention that Tailwind scans `*/forms.py`;
+  - form fields use a `data-field` fieldset wrapper with their errors directly below;
+  - the entry-rule contract: save through a form or `full_clean()`, never raw `.update()`; `Entry.clean()` rejects or clears based on `_saved_status`; the API serializer must reuse it;
+  - other users' objects return 404 through `get_object_or_404(..., user=request.user)`;
+  - `static/js/app.js` holds small enhancements, and pages must work without it.
+
+  Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions already in the code were added.
+- **Sideways:** The Phase 4 entry was written before its commit and push, so it doesn't record that Phase 4 was committed as `1af8f89` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated, and this entry fixes that.
+
 ## 2026-11-17 — Implemented Phase 4 (entry page and in-place editing) with TDD
 
 ### Prompts

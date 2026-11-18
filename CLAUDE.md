@@ -24,11 +24,15 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - Run: `uv run --env-file .env python manage.py migrate` then `... runserver`
 - Test: `uv run pytest` (no `.env` needed; settings fall back to a dev-only secret key)
 - Lint/format: `uv run ruff check .` and `uv run ruff format .`
-- CSS: after changing template classes, `./tools/tailwindcss.exe -i assets/tailwind/input.css -o static/css/app.css --minify` and commit `app.css`. The CLI binary is git-ignored; README has the download step.
+- CSS: after changing classes in templates or `*/forms.py` widget attrs, `./tools/tailwindcss.exe -i assets/tailwind/input.css -o static/css/app.css --minify` and commit `app.css`. The CLI binary is git-ignored; README has the download step.
 
 ## Conventions in use
 
-- Templates live in the project-level `templates/` dir (`base.html` holds the navbar and TMDB attribution footer). Tailwind scans `templates/` and `*/templates/`.
+- Templates live in the project-level `templates/` dir (`base.html` holds the navbar and TMDB attribution footer). Tailwind scans `templates/`, `*/templates/`, and `*/forms.py`.
+- Form fields render inside `<fieldset class="fieldset" data-field="<name>">` with that field's errors directly below the input (tests locate errors by `data-field`).
+- Entry rules: save entries through a form/`full_clean()`, never raw `.update()`. `Entry.clean()` rejects rating/date watched/times watched > 0 per field unless Watched, and clears them when the last-saved status (`_saved_status`) was Watched. The API serializer must reuse this, not reimplement it.
+- Other users' objects return 404 (look up with `user=request.user` in `get_object_or_404`), never 403.
+- `static/js/app.js` holds small vanilla-JS enhancements (watched-only input toggling, Clear rating); keep pages working without it.
 - App URLs are namespaced (`accounts:`, `catalog:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
 - HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
 - HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx`.
