@@ -28,6 +28,21 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Logged the Phase 5 session and updated CLAUDE.md with Phase 5 conventions
+
+### Prompts
+1. `log the session to PROMPTS.md, update CLAUDE.md, then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 5 established and tested:
+  - the HTMX bullet now notes that history-restore requests get the full page;
+  - a new bullet on the shared browse module `library/browse.py`: `clean_params`, the parameter names, `browse_entries`, `browse_context`, passing an already-limited queryset, and rendering through `library/partials/browse.html` in `#library-browse` with `hx-push-url` and `{% querystring %}`;
+  - a new bullet with the lessons from ad-hoc checks against the real database: use `shell -c "exec(...)"`, call `setup_test_environment()` before reading `response.context`, set `PYTHONIOENCODING=utf-8`, and clean up in `finally`.
+
+  Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions and workflow lessons already seen in this project were added.
+- **Sideways:** The Phase 5 entry was written before its commit and push, so it doesn't record that Phase 5 was committed as `8b7a004` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated, and this entry fixes that.
+
 ## 2026-11-17 — Implemented Phase 5 (library browsing) with TDD
 
 ### Prompts

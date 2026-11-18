@@ -35,12 +35,14 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - `static/js/app.js` holds small vanilla-JS enhancements (watched-only input toggling, Clear rating); keep pages working without it.
 - App URLs are namespaced (`accounts:`, `catalog:`, `library:`); data-managing views use `@login_required` (`LOGIN_URL = "accounts:login"`).
 - HTMX is pinned at 2.0.11 (`static/js/htmx.min.js`) for django-htmx compatibility; the CSRF token is sent via `hx-headers` on `<body>`.
-- HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx`.
+- HTMX views: the full-page template `{% include %}`s a partial from `templates/<app>/partials/`; the view returns just that partial when `request.htmx` (but the full page for `request.htmx.history_restore_request`).
+- Browsing entries (library, list pages, API) goes through `library/browse.py`: `clean_params` (`q`, `status`, `genre` = TMDB genre id, `min_rating`, `decade`, `sort`, `dir`, `page`; invalid values ignored), `browse_entries` (search/filter/sort, missing values last), and `browse_context` (20 per page + controls). Pass the unfiltered, already-scoped queryset (e.g. `user=request.user`). The website renders it with `library/partials/browse.html` inside `#library-browse` (HTMX swaps with `hx-push-url`; page links use `{% querystring %}`).
 - TMDB client is `catalog/tmdb.py`: every failure raises `TMDBError` with a `kind` and a user-readable `message`. Views call it as `tmdb.<function>` (so tests can monkeypatch it), catch `TMDBError`, and render the message as a DaisyUI `role="alert"` with HTTP 200 so HTMX swaps it in.
 - Getting a Movie for a TMDB id always goes through `catalog.services.get_or_fetch_movie` (stored row first, TMDB only if missing; raises `TMDBError`). `_store_details` there copies TMDB details + genres onto a Movie and is meant for reuse by refresh.
 - Posters: render with `{% include "partials/poster.html" with url=... title=... %}` (TMDB URL via `Movie.poster_url`, placeholder on missing or failed load).
 - Duplicates rely on DB unique constraints: create inside `transaction.atomic()` and handle `IntegrityError`, rather than check-then-create.
 - Tests sit in each app's `tests/` package; shared fixtures (`owner`, `shared_user`, `stranger`, `anon_client`, `owner_client`, `make_movie`) are in the root `conftest.py`. Autouse fixtures there use a fast password hasher, set a dummy TMDB token, and make any real `requests.get` fail the test; fake TMDB by monkeypatching `catalog.tmdb` functions (or `tmdb.requests.get` in client tests).
+- Ad-hoc checks against the real DB: `uv run --env-file .env python manage.py shell -c "exec(open(path).read())"` (piping into `shell` doesn't work); call `django.test.utils.setup_test_environment()` before reading `response.context`, set `PYTHONIOENCODING=utf-8` before printing ★, and delete any data created in a `finally` block.
 
 ## References
 
