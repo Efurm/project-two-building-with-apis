@@ -28,6 +28,47 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-18 — Implemented Phase 10 (lists API) with TDD
+
+### Prompts
+1. `/implement phase 10`
+2. `yes` (approved three TDD behaviors and the design: the API read matrix matches the website; viewers who aren't the owner can't write through the API; `shared_with` is written as usernames and unknown ones are a 400)
+3. `yes pass it` (approved the RED API read-matrix test)
+4. `yes` (moved on to behavior 2)
+5. `keep it and move on to behavior 3` (behavior 2's test passed on its first run; the user chose to keep it as a regression guard)
+6. `yes pass it` (approved the RED `shared_with` usernames test)
+7. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **`MovieListViewSet` at `/api/lists/`:**
+    - uses `IsAuthenticatedOrReadOnly`, so anonymous clients can only read;
+    - `get_queryset()` picks by HTTP method: reads use `MovieList.objects.visible_to(user)`, the website's single rule, and writes use `owner=request.user`, so non-owners get a 404 on lists they can see;
+    - the list endpoint takes `shared_with_me=true` and `owner=<username>` filters, both built from `visible_to`.
+  - **Items:**
+    - `GET /api/lists/<pk>/items/` reuses `browse_entries` and is paginated;
+    - `POST` with `{"entry": id}` adds only the requester's own entry (404 otherwise; 201 when added, 200 for a duplicate; 400 for a missing or invalid id);
+    - `DELETE /api/lists/<pk>/items/<entry_id>/` returns 204, or 404 if the entry isn't in the list.
+  - **`MovieListSerializer`:** the owner's username, visibility, `item_count`, and `shared_with` through a new `UsernamesField` (usernames in and out, unknown names rejected with the website's message, and sending the field replaces the whole set). Sharing with yourself is rejected with the website's message.
+  - **Docs:** the README API section has list examples.
+  - **Checks:** 324 tests pass (3 TDD plus ordinary tests for listing as anonymous and as a shared user, both filters, the response shape, create with owner, visibility and sharing, the Private default, five invalid create payloads, self-sharing, anonymous create giving 401, PATCH rename and clearing `shared_with`, PATCH without `shared_with` keeping recipients, delete keeping entries, add, duplicate add, a foreign entry, invalid ids, removal, removing something not in the list, items with browse settings, and anonymous reads of public items). Ruff is clean and no migrations are missing.
+  - **Live HTTP check with three real tokens:**
+    - an unknown username was a 400 with the message, and create, add item, and the friend reading items with the owner's note all worked;
+    - the friend's `shared_with_me` listing was right, and the stranger and anonymous visitor both got 404 reads;
+    - the friend's rename was a 404, and making the list public let anonymous visitors read its items and see it through the owner filter, while an anonymous delete was a 401;
+    - removing an item gave 204 and then 404, and deleting the list worked. All the data was cleaned up.
+- **Deviations:** The user approved the design and all three behaviors. Behavior 2's test passed on its first run (behavior 1's per-method queryset already covered writes). The agent reported that, checked the test wasn't hollow by making writes use `visible_to` (15 of 30 cases failed), restored the code, and the user chose to keep it as a regression guard. The agent's own choices:
+  - **Filter format:** `shared_with_me` accepts true, 1 or yes.
+  - **Items:** a duplicate add returns 200, and removing an entry that isn't in the list is a 404, not a quiet 204.
+  - **Sharing rules:** the API rejects self-sharing like the website, and `shared_with` replaces the whole set rather than adding to it.
+  - **Scaffold cleanup:** a pointless `items.mapping.delete` placeholder in the scaffold was removed before testing.
+- **Sideways:**
+  - One ordinary test shared with `friend` without requesting the `shared_user` fixture, so it got a correct 400. The test was fixed by adding the fixture.
+  - Ruff's formatter split one long line.
+  - In the live check, "remove item" first showed curl status `000`. Repeated on its own, removal returned 204, then 404, and the entry was kept. The likely cause was a trailing carriage return in the entry id read from the Windows shell output with `read`, making the URL malformed. That's a script problem, not an API one.
+  - There were no template changes, so the CSS wasn't rebuilt.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 9 session and updated CLAUDE.md with Phase 9 conventions
 
 ### Prompts

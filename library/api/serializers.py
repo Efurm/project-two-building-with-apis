@@ -1,10 +1,11 @@
 import copy
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from catalog.models import Genre, Movie
-from library.models import Entry
+from library.models import Entry, MovieList
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -84,3 +85,63 @@ class EntrySerializer(serializers.ModelSerializer):
         for field in self.WATCHED_ONLY_FIELDS:
             attrs[field] = getattr(candidate, field)
         return attrs
+
+
+class UsernamesField(serializers.Field):
+    """A many-to-many to User, read and written as a list of usernames.
+
+    Every username must belong to an existing account; otherwise the whole request is
+    rejected with one "No account has the username X." message per unknown name.
+    """
+
+    default_error_messages = {
+        "not_a_list": "Expected a list of usernames.",
+        "unknown": "No account has the username {username}.",
+    }
+
+    def to_representation(self, value):
+        return sorted(user.username for user in value.all())
+
+    def to_internal_value(self, data):
+        if not isinstance(data, list) or not all(isinstance(name, str) for name in data):
+            self.fail("not_a_list")
+        names = list(dict.fromkeys(name.strip() for name in data))
+        users = {u.username: u for u in get_user_model().objects.filter(username__in=names)}
+        unknown = [name for name in names if name not in users]
+        if unknown:
+            raise serializers.ValidationError(
+                [self.error_messages["unknown"].format(username=name) for name in unknown]
+            )
+        return [users[name] for name in names]
+
+
+class MovieListSerializer(serializers.ModelSerializer):
+    """A named list. `shared_with` is a list of usernames."""
+
+    owner = serializers.CharField(source="owner.username", read_only=True)
+    shared_with = UsernamesField(required=False)
+    item_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MovieList
+        fields = [
+            "id",
+            "name",
+            "owner",
+            "visibility",
+            "shared_with",
+            "item_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "owner", "created_at", "updated_at"]
+
+    def get_item_count(self, movie_list):
+        return movie_list.items.count()
+
+    def validate_shared_with(self, users):
+        """Same rule as the website: the owner can't share a list with themselves."""
+        request = self.context.get("request")
+        if request is not None and any(user.pk == request.user.pk for user in users):
+            raise serializers.ValidationError("You own this list, so you can always see it.")
+        return users

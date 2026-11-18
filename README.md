@@ -73,7 +73,27 @@ curl -X PATCH -H "Authorization: Token $TOKEN" -H "Content-Type: application/jso
 curl -X DELETE -H "Authorization: Token $TOKEN" "$BASE/entries/1/"
 ```
 
-Entries are always private to their owner (others' entries are 404). Status and rating
+Lists (`/api/lists/`) follow the same visibility rules as the website:
+
+```sh
+# Lists you can see; filters: ?shared_with_me=true, ?owner=<username>
+curl -H "Authorization: Token $TOKEN" "$BASE/lists/?shared_with_me=true"
+
+# Create a list shared with two users (visibility: private, public, or shared)
+curl -X POST -H "Authorization: Token $TOKEN" -H "Content-Type: application/json"      -d '{"name": "Date night", "visibility": "shared", "shared_with": ["alice", "bob"]}'      "$BASE/lists/"
+
+# Its entries (same browse parameters as the library), add one of yours, remove one
+curl -H "Authorization: Token $TOKEN" "$BASE/lists/1/items/?sort=rating"
+curl -X POST -H "Authorization: Token $TOKEN" -H "Content-Type: application/json"      -d '{"entry": 1}' "$BASE/lists/1/items/"
+curl -X DELETE -H "Authorization: Token $TOKEN" "$BASE/lists/1/items/1/"
+
+# Public lists need no token
+curl "$BASE/lists/?owner=alice"
+```
+
+Entries are always private to their owner (others' entries are 404). Lists you may not
+see are 404, only the owner can change a list, and unknown usernames in `shared_with`
+are rejected. Status and rating
 follow the same rules as the website. Creating an entry for a movie that is not stored
 yet needs TMDB; if TMDB is unavailable the API responds `503` with a `detail` message.
 
