@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from .models import Entry, MovieList
 
@@ -68,3 +69,29 @@ class MovieListForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # The field strips whitespace, so a blank or all-space name fails "required".
         self.fields["name"].error_messages["required"] = "Give the list a name."
+
+
+class ShareForm(forms.Form):
+    """Share a list with another user by username (owner only)."""
+
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(
+            attrs={"class": "input input-sm join-item w-full", "placeholder": "Username"}
+        ),
+    )
+
+    def __init__(self, *args, owner, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+        self.fields["username"].error_messages["required"] = "Enter a username."
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        user = get_user_model().objects.filter(username=username).first()
+        if user is None:
+            raise forms.ValidationError(f"No account has the username {username}.")
+        if user == self.owner:
+            raise forms.ValidationError("You own this list, so you can always see it.")
+        self.cleaned_data["user"] = user
+        return username

@@ -304,11 +304,15 @@ def test_stranger_cannot_delete_my_entry(client, stranger, entry):
     assert Entry.objects.filter(pk=entry.pk).exists()
 
 
-def test_lists_pages_require_sign_in(anon_client, my_list):
-    for url in (reverse("lists:index"), reverse("lists:detail", args=[my_list.pk])):
-        response = anon_client.get(url)
-        assert response.status_code == 302
-        assert response["Location"].startswith(reverse("accounts:login"))
+def test_my_lists_page_requires_sign_in_and_private_list_is_404_when_signed_out(
+    anon_client, my_list
+):
+    response = anon_client.get(reverse("lists:index"))
+    assert response.status_code == 302
+    assert response["Location"].startswith(reverse("accounts:login"))
+
+    # Since Phase 8 list pages follow the visibility rule instead of requiring sign-in.
+    assert anon_client.get(reverse("lists:detail", args=[my_list.pk])).status_code == 404
 
 
 def test_navbar_links_to_lists(owner_client):

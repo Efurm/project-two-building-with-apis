@@ -3,11 +3,26 @@
 {% block content %}
 <div class="text-sm breadcrumbs mb-2">
   <ul>
-    <li><a href="{% url 'lists:index' %}">My lists</a></li>
+    {% if is_owner %}
+      <li><a href="{% url 'lists:index' %}">My lists</a></li>
+    {% else %}
+      <li><a href="{% url 'profile' movie_list.owner.username %}">{{ movie_list.owner.username }}</a></li>
+    {% endif %}
     <li>{{ movie_list.name }}</li>
   </ul>
 </div>
-{% include "lists/partials/list_header.html" %}
+{% if is_owner %}
+  {% include "lists/partials/list_header.html" %}
+  {% include "lists/partials/sharing.html" %}
+{% else %}
+  <div class="mb-4" data-testid="list-viewer-header">
+    <h1 class="text-2xl font-bold">{{ movie_list.name }}</h1>
+    <p class="opacity-70">
+      A {{ movie_list.get_visibility_display|lower }} list by
+      <a class="link" href="{% url 'profile' movie_list.owner.username %}">{{ movie_list.owner.username }}</a>
+    </p>
+  </div>
+{% endif %}
 <div id="library-browse">
   {% include "library/partials/browse.html" %}
 </div>

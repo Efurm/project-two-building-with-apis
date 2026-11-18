@@ -1,0 +1,24 @@
+{% comment %}
+  A grid of list cards. Context: lists (annotated with item_count), show_owner (bool),
+  empty_text.
+{% endcomment %}
+{% if lists %}
+  <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {% for movie_list in lists %}
+      <li class="card bg-base-100 shadow-sm" data-testid="list-card">
+        <a href="{% url 'lists:detail' movie_list.pk %}" class="card-body p-4 hover:bg-base-300 rounded-box">
+          <h2 class="card-title text-base">{{ movie_list.name }}</h2>
+          <p class="text-sm opacity-70">
+            {{ movie_list.item_count }} movie{{ movie_list.item_count|pluralize }}{% if show_owner %} · by {{ movie_list.owner.username }}{% endif %}
+          </p>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center">
+      <p class="text-lg">{{ empty_text }}</p>
+    </div>
+  </div>
+{% endif %}

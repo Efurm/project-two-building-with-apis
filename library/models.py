@@ -75,16 +75,49 @@ class Entry(models.Model):
             raise ValidationError(errors)
 
 
+class MovieListQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        """Lists `user` may view: the single source of truth for list visibility.
+
+        Owners see all their lists; anyone (including anonymous visitors) sees Public
+        lists; Shared lists are visible to the users in `shared_with`. `shared_with`
+        only counts while the list is Shared. Writing is always owner-only.
+        """
+        public = models.Q(visibility=MovieList.Visibility.PUBLIC)
+        if not user.is_authenticated:
+            return self.filter(public)
+        # A subquery (not a join) so a list never appears twice.
+        shared_with_user = MovieList.shared_with.through.objects.filter(user=user).values(
+            "movielist_id"
+        )
+        return self.filter(
+            models.Q(owner=user)
+            | public
+            | models.Q(visibility=MovieList.Visibility.SHARED, pk__in=shared_with_user)
+        )
+
+
 class MovieList(models.Model):
     """A user's named list of their own library entries."""
+
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Private"
+        PUBLIC = "public", "Public"
+        SHARED = "shared", "Shared"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="movie_lists"
     )
     name = models.CharField(max_length=100)
+    visibility = models.CharField(max_length=10, choices=Visibility, default=Visibility.PRIVATE)
+    shared_with = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="shared_lists"
+    )
     entries = models.ManyToManyField(Entry, through="ListItem", related_name="movie_lists")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = MovieListQuerySet.as_manager()
 
     class Meta:
         ordering = ["name", "pk"]

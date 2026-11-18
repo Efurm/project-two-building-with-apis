@@ -25,6 +25,10 @@
         <a href="{% url 'lists:detail' movie_list.pk %}" class="card-body p-4 hover:bg-base-300 rounded-box">
           <h2 class="card-title text-base">{{ movie_list.name }}</h2>
           <p class="text-sm opacity-70">{{ movie_list.item_count }} movie{{ movie_list.item_count|pluralize }}</p>
+          <p>
+            <span class="badge badge-sm {% if movie_list.visibility == 'public' %}badge-success{% elif movie_list.visibility == 'shared' %}badge-info{% else %}badge-ghost{% endif %}"
+                  data-testid="visibility-badge">{{ movie_list.get_visibility_display }}{% if movie_list.visibility == 'shared' %} · {{ movie_list.shared_count }}{% endif %}</span>
+          </p>
         </a>
       </li>
     {% endfor %}

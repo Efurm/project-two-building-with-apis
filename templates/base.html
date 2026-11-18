@@ -18,7 +18,8 @@
         <a href="{% url 'catalog:find' %}" class="btn btn-ghost btn-sm">Find movies</a>
         <a href="{% url 'library:index' %}" class="btn btn-ghost btn-sm">Library</a>
         <a href="{% url 'lists:index' %}" class="btn btn-ghost btn-sm">Lists</a>
-        <span class="text-sm opacity-70 px-2">{{ user.username }}</span>
+        <a href="{% url 'shared' %}" class="btn btn-ghost btn-sm">Shared with me</a>
+        <a href="{% url 'profile' user.username %}" class="btn btn-ghost btn-sm" title="My public profile">{{ user.username }}</a>
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
           <button type="submit" class="btn btn-ghost btn-sm">Log out</button>

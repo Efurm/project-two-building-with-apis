@@ -28,6 +28,41 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 8 (list visibility and sharing on the website) with TDD
+
+### Prompts
+1. `/implement phase 8`
+2. `yes` (approved three TDD behaviors and the design: `visible_to(user)` as the single visibility rule; viewers who aren't the owner can't change a list they can see; sharing with an unknown username shows an error and shares with nobody)
+3. `yes pass it` (approved the RED `visible_to` test, including that `shared_with` only counts while the list is Shared)
+4. `yes` (moved on to behavior 2)
+5. `yes pass it` (approved the RED non-owner write test: 7 write routes × 2 viewers × Public or Shared)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED unknown-username test and its exact message)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **Migration `0003_movielist_visibility`:** adds `visibility` (Private, Public or Shared, default Private) and `shared_with` (many-to-many to User, `related_name="shared_lists"`).
+  - **`MovieList.objects.visible_to(user)`:** the single rule. It returns your own lists, every Public list, and Shared lists you're named on. Anonymous visitors get Public only. It uses a subquery, so no list appears twice.
+  - **Owner-only sharing endpoints:** `POST /lists/<pk>/visibility/`, `/share/` (`ShareForm`: unknown usernames and your own are rejected with an error next to the field) and `/share/<user_pk>/remove/`. They all return the `lists/partials/sharing.html` panel (visibility radios that save on change, a help text, recipients with ✕, and the username form). Without HTMX they redirect to the list with messages.
+  - **List page `/lists/<pk>/`:** now reads through `visible_to`, so it no longer requires sign-in, and lists you can't see return 404. Owners get the header, sharing panel and remove buttons. Other viewers get a "A public/shared list by X" header and read-only cards showing the owner's status, stars and notes, without links to the entry page.
+  - **New pages:** a profile `/u/<username>/` (`profile`, works signed out, shows only that user's Public lists) and `/shared/` (`shared`, sign-in required, lists shared with you that are currently Shared, with their owners).
+  - **Other changes:** visibility badges on the lists index (with the recipient count), and navbar links to "Shared with me" and your own profile. The lists index now counts with `distinct=True`.
+  - **Checks:** 225 tests pass (3 TDD plus the website read matrix of 4 viewers × 3 visibilities × full page or HTMX, viewer-only rendering, owner controls, entries staying owner-only inside a public list, profile, an unknown profile, shared-with-me filtering and sign-in, setting visibility with its help text, an invalid visibility, share and unshare, sharing twice or with yourself, the non-HTMX share error, index badges and navbar links). Ruff is clean, no migrations are missing, the CSS was rebuilt and `0003` is applied locally.
+  - **Live check on the real database:** the private, shared and public access matrix, the unknown-username error, the friend's "Shared with me" page, the friend's write attempt giving 404, the public profile and the owner-only entry page all behaved as expected. The data was cleaned up.
+- **Deviations:** The user approved the design, all three behaviors and the RED tests without changes. The agent's own choices:
+  - **URLs:** `/u/<username>/` and `/shared/` have top-level names (`profile`, `shared`) whose views live in `library/list_views.py`.
+  - **Rules:** sharing with yourself is rejected; sharing with someone already on the list does nothing; the share form appears only while the list is Shared; usernames stay in `shared_with` when the list is made Private, but no longer count.
+  - **Pages:** the profile shows `visible_to(AnonymousUser())` filtered by owner, and "Shared with me" shows `visible_to(user)` filtered to Shared and excluding your own lists, so both come from the single rule.
+  - **Navbar:** your username in the navbar now links to your profile.
+- **Sideways:**
+  - The behavior-3 panel template linked to the `profile` URL before that URL existed. The test passed only because it rendered a Shared list. This was flagged in the GREEN summary and fixed straight away by building the profile page.
+  - Counting `items` and `shared_with` in one query would have multiplied the counts; it was caught while writing the view and fixed with `distinct=True`.
+  - The Phase 7 test `test_lists_pages_require_sign_in` failed, as expected, because list pages no longer require sign-in. It was rewritten: `/lists/` still requires sign-in, and a Private list is 404 for anonymous visitors.
+  - Ruff's formatter split lines that were too long in the new tests (a mechanical change, including in the approved behavior-2 test).
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser, so the radio auto-save and panel swaps weren't checked visually.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 7 session and updated CLAUDE.md with Phase 7 conventions
 
 ### Prompts
