@@ -54,3 +54,14 @@ def get_or_fetch_movie(tmdb_id):
     except IntegrityError:
         # Another request stored the same movie first.
         return Movie.objects.get(tmdb_id=tmdb_id)
+
+
+def refresh_movie(movie):
+    """Re-fetch `movie` from TMDB and update its stored details, genres, and last-fetched time.
+
+    TMDB is called before anything is changed, so if it raises `tmdb.TMDBError` the stored
+    movie is left exactly as it was.
+    """
+    data = tmdb.get_movie_details(movie.tmdb_id)
+    with transaction.atomic():
+        return _store_details(movie, data)

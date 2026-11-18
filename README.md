@@ -52,6 +52,19 @@ Then build (add `--watch` while editing templates):
 
 HTMX (v2.0.11) is served locally from `static/js/htmx.min.js`.
 
+## Refreshing cached TMDB data
+
+TMDB's terms require cached data to be refreshed at least every 6 months. Saved movies
+can be refreshed one at a time with the "Refresh from TMDB" button on an entry's page, or
+in bulk with:
+
+```sh
+uv run --env-file .env python manage.py refresh_movies               # older than 180 days
+uv run --env-file .env python manage.py refresh_movies --older-than 30
+```
+
+Failures are reported and skipped; the stored data for those movies is unchanged.
+
 ## TMDB command-line search
 
 ```sh

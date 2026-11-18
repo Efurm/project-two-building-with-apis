@@ -30,6 +30,12 @@
   </header>
 
   <main class="flex-1 w-full max-w-6xl mx-auto p-4">
+    {% for message in messages %}
+      <div role="{% if message.level_tag == 'error' %}alert{% else %}status{% endif %}"
+           class="alert alert-soft mb-4 {% if message.level_tag == 'error' %}alert-error{% elif message.level_tag == 'success' %}alert-success{% else %}alert-info{% endif %}">
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
     {% block content %}{% endblock %}
   </main>
 

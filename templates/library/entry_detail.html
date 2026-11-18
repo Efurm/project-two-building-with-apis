@@ -8,39 +8,15 @@
     <li>{{ movie.title }}</li>
   </ul>
 </div>
-<div class="grid gap-6 md:grid-cols-[14rem_1fr]">
-  <div>
-    {% include "partials/poster.html" with url=movie.poster_url title=movie.title class="w-56 max-w-full rounded-box shadow" %}
-  </div>
-  <div class="space-y-6">
-    <section class="space-y-2" data-testid="movie-details">
-      <h1 class="text-3xl font-bold">
-        {{ movie.title }}
-        {% if movie.year %}<span class="font-normal opacity-60">({{ movie.year }})</span>{% endif %}
-      </h1>
-      {% if movie.original_title and movie.original_title != movie.title %}
-        <p class="opacity-70 italic">{{ movie.original_title }}</p>
-      {% endif %}
-      <div class="flex flex-wrap gap-2 items-center text-sm">
-        {% if movie.release_date %}<span>Released {{ movie.release_date|date:"M j, Y" }}</span>{% endif %}
-        {% if movie.runtime %}<span>· {{ movie.runtime }} min</span>{% endif %}
-        {% if movie.vote_average %}<span>· TMDB score {{ movie.vote_average|floatformat:1 }}/10</span>{% endif %}
-      </div>
-      {% if movie.genres.all %}
-        <div class="flex flex-wrap gap-1">
-          {% for genre in movie.genres.all %}<span class="badge badge-outline">{{ genre.name }}</span>{% endfor %}
-        </div>
-      {% endif %}
-      <p class="max-w-prose">{{ movie.overview|default:"No overview available." }}</p>
-    </section>
+<div class="space-y-6">
+  {% include "catalog/partials/movie_details.html" %}
 
-    <div id="entry-panel" class="card bg-base-100 shadow-sm">
-      {% if form %}
-        {% include "library/partials/entry_form.html" %}
-      {% else %}
-        {% include "library/partials/entry_panel.html" %}
-      {% endif %}
-    </div>
+  <div id="entry-panel" class="card bg-base-100 shadow-sm">
+    {% if form %}
+      {% include "library/partials/entry_form.html" %}
+    {% else %}
+      {% include "library/partials/entry_panel.html" %}
+    {% endif %}
   </div>
 </div>
 {% endwith %}

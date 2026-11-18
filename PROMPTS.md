@@ -28,6 +28,40 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 6 (refresh from TMDB: button and command) with TDD
+
+### Prompts
+1. `/implement phase 6`
+2. `yes` (approved three TDD behaviors: refresh replaces details and genres and moves `last_fetched_at` forward; a failed refresh from the entry page keeps the stored movie and shows an alert; `refresh_movies` refreshes only movies older than the cutoff)
+3. `yes pass it` (approved the RED refresh-service test)
+4. `yes` (moved on to behavior 2)
+5. `yes pass it` (approved the RED failed-refresh test)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED command-cutoff test)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **`catalog.services.refresh_movie`:** fetches from TMDB first, then reuses `_store_details` in a transaction. It updates the same row, replaces the genre set and moves `last_fetched_at` forward. A TMDB failure changes nothing.
+  - **`POST /find/refresh/<tmdb_id>/` (`catalog:refresh`):** sign-in only, and 404 unless the movie is in the user's library.
+    - With HTMX, it returns the movie-details section with an "Updated from TMDB." status, or an error alert that says the stored details are unchanged.
+    - Without HTMX, it redirects to the entry page with a Django message. Messages now render in `base.html`.
+  - **Entry page:** the movie section moved into `catalog/partials/movie_details.html` (`#movie-details`), with a **Refresh from TMDB** button (spinner, button disabled while the request runs) and "Last updated" date.
+  - **`refresh_movies` command:** `--older-than DAYS` (default 180, negative rejected). It refreshes stale movies oldest first, carries on past failures (reported on stderr), and prints a count and a "Done: N refreshed, M failed." summary.
+  - **Docs:** the README has a "Refreshing cached TMDB data" section, and the `CLAUDE.md` Commands section lists `refresh_movies`.
+  - **Checks:** 125 tests pass (3 TDD plus ordinary tests for successful refresh, the button wiring, the non-HTMX redirect with a message, sign-in, 405, 404 for a movie not in your library, the command carrying on past failures with its summary, nothing stale, and negative days). Ruff is clean, no migrations are missing, and the CSS was rebuilt.
+  - **Live check against real TMDB:** the button refreshed a deliberately out-of-date Inception row, the command refreshed a 400-day-old row, and with a bad token the command reported the 401 and left the row and timestamp unchanged. The data was cleaned up. The script stopped early if the database already held movies, so real data couldn't be touched.
+- **Deviations:** The user approved all three behaviors and RED tests without changes. The agent's own choices:
+  - The refresh URL `/find/refresh/<tmdb_id>/` lives in the catalog app, as the PRD says catalog owns refresh. It's limited to movies in the requester's library.
+  - The details section and the alert swap together.
+  - Django messages were added to the base layout for the non-HTMX fallback.
+  - The command writes per-movie lines and refreshes oldest first.
+  - `CLAUDE.md` got only the new command line in this session.
+- **Sideways:**
+  - Ruff flagged two lines that were too long (the command's summary line and one in the behavior-2 test); its formatter split them, which is a mechanical change.
+  - The command prints a movie's title after refreshing, so a renamed movie is logged under its new title.
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser, so the spinner and button disabling weren't checked visually.
+
 ## 2026-11-17 — Logged the Phase 5 session and updated CLAUDE.md with Phase 5 conventions
 
 ### Prompts

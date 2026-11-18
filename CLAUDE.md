@@ -24,6 +24,7 @@ Movie Watch Log: a Django web app and REST API where signed-in users save movies
 - Run: `uv run --env-file .env python manage.py migrate` then `... runserver`
 - Test: `uv run pytest` (no `.env` needed; settings fall back to a dev-only secret key)
 - Lint/format: `uv run ruff check .` and `uv run ruff format .`
+- Refresh stale TMDB data: `uv run --env-file .env python manage.py refresh_movies [--older-than DAYS]` (default 180)
 - CSS: after changing classes in templates or `*/forms.py` widget attrs, `./tools/tailwindcss.exe -i assets/tailwind/input.css -o static/css/app.css --minify` and commit `app.css`. The CLI binary is git-ignored; README has the download step.
 
 ## Conventions in use

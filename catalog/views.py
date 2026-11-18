@@ -1,11 +1,13 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from library.models import Entry
 
 from . import services, tmdb
+from .models import Movie
 
 OVERVIEW_LENGTH = 150
 
@@ -89,3 +91,29 @@ def save_movie(request, tmdb_id):
         "catalog/partials/save_button.html",
         {"tmdb_id": tmdb_id, "in_library": True},
     )
+
+
+@login_required
+@require_POST
+def refresh_movie(request, tmdb_id):
+    """Refresh a movie in the user's library from TMDB and return its details section.
+
+    On failure the stored movie is unchanged and an alert explains why.
+    """
+    movie = get_object_or_404(Movie, tmdb_id=tmdb_id, entries__user=request.user)
+    context = {"movie": movie}
+    try:
+        services.refresh_movie(movie)
+    except tmdb.TMDBError as error:
+        context["refresh_error"] = error.message
+    else:
+        context["refresh_success"] = True
+
+    if not request.htmx:
+        if "refresh_error" in context:
+            messages.error(request, f"Could not refresh from TMDB: {context['refresh_error']}")
+        else:
+            messages.success(request, "Updated from TMDB.")
+        entry = Entry.objects.get(user=request.user, movie=movie)
+        return redirect("library:entry_detail", pk=entry.pk)
+    return render(request, "catalog/partials/movie_details.html", context)

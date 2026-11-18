@@ -1,0 +1,49 @@
+{% comment %}
+  A stored movie's TMDB details (local data only). The Refresh button swaps this whole
+  section with the result of catalog:refresh. Context: movie, optional refresh_error /
+  refresh_success.
+{% endcomment %}
+<section id="movie-details" class="grid gap-6 md:grid-cols-[14rem_1fr]" data-testid="movie-details">
+  {% if refresh_error %}
+    <div role="alert" class="alert alert-error alert-soft md:col-span-2">
+      <span>Could not refresh from TMDB: {{ refresh_error }} The stored details below are unchanged.</span>
+    </div>
+  {% elif refresh_success %}
+    <div role="status" class="alert alert-success alert-soft md:col-span-2">
+      <span>Updated from TMDB.</span>
+    </div>
+  {% endif %}
+  <div>
+    {% include "partials/poster.html" with url=movie.poster_url title=movie.title class="w-56 max-w-full rounded-box shadow" %}
+  </div>
+  <div class="space-y-2">
+    <h1 class="text-3xl font-bold">
+      {{ movie.title }}
+      {% if movie.year %}<span class="font-normal opacity-60">({{ movie.year }})</span>{% endif %}
+    </h1>
+    {% if movie.original_title and movie.original_title != movie.title %}
+      <p class="opacity-70 italic">{{ movie.original_title }}</p>
+    {% endif %}
+    <div class="flex flex-wrap gap-2 items-center text-sm">
+      {% if movie.release_date %}<span>Released {{ movie.release_date|date:"M j, Y" }}</span>{% endif %}
+      {% if movie.runtime %}<span>· {{ movie.runtime }} min</span>{% endif %}
+      {% if movie.vote_average %}<span>· TMDB score {{ movie.vote_average|floatformat:1 }}/10</span>{% endif %}
+    </div>
+    {% if movie.genres.all %}
+      <div class="flex flex-wrap gap-1">
+        {% for genre in movie.genres.all %}<span class="badge badge-outline">{{ genre.name }}</span>{% endfor %}
+      </div>
+    {% endif %}
+    <p class="max-w-prose">{{ movie.overview|default:"No overview available." }}</p>
+    <form method="post" action="{% url 'catalog:refresh' movie.tmdb_id %}" class="pt-2"
+          hx-post="{% url 'catalog:refresh' movie.tmdb_id %}" hx-target="#movie-details"
+          hx-swap="outerHTML" hx-indicator="#refresh-spinner" hx-disabled-elt="find button">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline">
+        <span id="refresh-spinner" class="loading loading-spinner loading-xs htmx-indicator"></span>
+        Refresh from TMDB
+      </button>
+      <span class="text-xs opacity-60 ml-2">Last updated {{ movie.last_fetched_at|date:"M j, Y" }}</span>
+    </form>
+  </div>
+</section>
