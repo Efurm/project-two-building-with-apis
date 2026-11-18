@@ -28,6 +28,41 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-18 — Explained the API endpoints and wrote an API client script
+
+### Prompts
+1. `Show me the API endpoints in my project in table format. Choose a list endpoint and a related detail endpoint for me to open in the browser. Explain any authentication needed and give me the URLs for viewing JSON.`
+2. `Walk me through the api/titles/ [REPLACE WITH YOUR OWN ENDPOINT] endpoint. Show me the associated model, serializer, and view` (interrupted by the user while the agent was reading the code)
+3. `Walk me through the api/entries/  endpoint. Show me the associated model, serializer, and view`
+4. `Create a Python script in the scripts/ directory that consumes my projects API. The script should have two behaviors: 1. Call one list endpoint with query parameters and print the results. 2. Call one update endpoint that updates one field through the API. Print the before and after results.`
+5. `log the session to PROMPTS.md, then commit and push`
+
+### Summary
+- **Outcome:**
+  - **Prompt 1:** listed all 13 API routes in a table with method, purpose and sign-in needs. Picked `/api/entries/` (list) and `/api/entries/<id>/` (detail) to open, explained that browser viewing uses the website session while scripts use `Authorization: Token <key>`, and gave readable and `?format=json` URLs.
+  - **Prompt 3:** walked through `/api/entries/` from the router and DRF settings to `EntryViewSet` (`get_queryset` limiting results to the requester and reusing `browse_entries`; `perform_create` with the duplicate check, `get_or_fetch_movie`, the 503 and the `IntegrityError` race), `EntrySerializer` (fields, `tmdb_id` create-only, `validate()` running `Entry.clean()`, the nested `MovieSerializer`) and the `Entry` and `Movie` models. It ended with one PATCH request traced step by step.
+  - **Prompt 4:** wrote `scripts/api_client.py`, using `requests` with settings from `.env` in the style of `tmdb_search.py`.
+    - **`list`** calls `GET /api/entries/` with optional `--q`, `--status`, `--genre`, `--min-rating`, `--decade`, `--sort`, `--dir` and `--page`, and prints readable entries plus the count.
+    - **`update ENTRY_ID FIELD VALUE`** reads the entry, sends a `PATCH` to `/api/entries/<id>/` changing one field (status, rating, notes, date_watched or times_watched; `none` clears rating or date), and prints the entry before and after with the changed fields.
+    - **Errors:** clear messages for timeout, no connection, 401, 404, 400 field errors and other HTTP errors.
+    - **Settings:** `MOVIELOG_API_TOKEN` and the optional `MOVIELOG_API_URL` were added to `.env.example`.
+  - **Live check against `runserver`** with a throwaway user, token and two entries:
+    - list with a sort, list with combined filters, and a no-match list;
+    - updating notes, with the change listed;
+    - a rating on an unwatched entry (the API's 400 message);
+    - changing status away from Watched, which showed the server also clearing rating, date and count;
+    - a 404 id, a bad token (401), the server not running, and a missing token.
+    
+    The data was cleaned up. Ruff passes.
+- **Deviations:**
+  - Prompt 2 named a placeholder endpoint (`api/titles/`) that doesn't exist. The agent substituted `/api/entries/`, the closest match, and the user then interrupted and asked for `/api/entries/` directly.
+  - For the script, the agent chose the entries endpoint for both behaviors, a token read from `.env` (matching the existing script), and a field-and-value update command limited to the user's own entry fields.
+- **Sideways:**
+  - Ruff's formatter joined one list comprehension in the new script.
+  - The live run passed the token as an environment variable so the user's `.env` wasn't changed, and it removed the Windows carriage return from the ids read from `manage.py shell` (the cause of Phase 10's `000` curl result).
+  - An untracked `REFLECTION.md` appeared in the repo during the session. The agent didn't create it and left it out of the commit.
+  - No tests were added for the script; it was checked by running it against the live server.
+
 ## 2026-11-18 — Logged the Phase 10 session and updated CLAUDE.md with Phase 10 conventions
 
 ### Prompts
