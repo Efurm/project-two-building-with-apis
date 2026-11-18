@@ -28,6 +28,23 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-18 — Logged the Phase 10 session and updated CLAUDE.md with Phase 10 conventions
+
+### Prompts
+1. `log the session to PROMPTS.md, update CLAUDE.md, then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 10 established and tested:
+  - the API bullet now lists the real routes (`/api/entries/`, `/api/lists/` and the nested items) in place of "lists next";
+  - a new lists-API bullet:
+    - `MovieListViewSet` uses `IsAuthenticatedOrReadOnly` and picks its queryset by HTTP method (`visible_to` for safe methods, owner only otherwise), so dual-purpose actions such as `items` can't leak writes;
+    - `shared_with` is a `UsernamesField` that takes and returns usernames, rejects unknown names and replaces the set, with messages matching the website's;
+    - the API and website visibility tests share the same viewer × visibility table.
+
+  Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions already in the code were added.
+- **Sideways:** The Phase 10 entry was written before its commit and push, so it doesn't record that Phase 10 was committed as `d12e958` and pushed to `origin/main`; it's noted here instead. That entry also said `CLAUDE.md` had not been updated, and this entry fixes that. With Phase 10, all ten phases of `plans/movie-watch-log.md` are implemented.
+
 ## 2026-11-18 — Implemented Phase 10 (lists API) with TDD
 
 ### Prompts
