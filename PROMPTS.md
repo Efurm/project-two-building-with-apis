@@ -28,6 +28,42 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 5 (library browsing) with TDD
+
+### Prompts
+1. `/implement phase 5`
+2. `yes` (approved three TDD behaviors: search over title or notes; status/genre/min-rating/decade filters that narrow and combine; rating sort with unrated last both ways)
+3. `yes pass it` (approved the RED search test)
+4. `yes` (moved on to behavior 2)
+5. `make it pass` (approved the RED filters test, including `genre` as a TMDB genre id, "N stars and up", and inclusive decade boundaries)
+6. `yes` (moved on to behavior 3)
+7. `make it pass` (approved the RED rating-sort test)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **`library/browse.py`:** the shared browse module for the library page now, and for list pages and the API later. It contains:
+    - `clean_params`: validates `q`, `status`, `genre` (TMDB id), `min_rating`, `decade`, `sort` and `dir`; invalid values are ignored;
+    - `browse_entries`: title or notes search, filters combined with AND, and five sorts (title ignores case) with missing values last in both directions and newest-added first as the tie-break;
+    - `filter_options`: only the genres and decades present in the set being browsed;
+    - `browse_context`: 20 per page plus the data the template needs.
+  - **Shared partial `library/partials/browse.html`:** search box, five filter or sort selects, result count, "Clear filters", the cards, a "no matches" message, an empty-library state (with an optional `empty_message`) and Previous/Next page links built with `{% querystring %}`.
+  - **HTMX:** the form and page links swap `#library-browse` with `hx-push-url`, so every setting is in the URL. HTMX requests get the partial; full loads and HTMX history restores get the whole page.
+  - **Checks:** 112 tests pass (3 TDD plus ordinary tests for each sort, ignored invalid values, page size and range, page links keeping settings, partial versus full page, history restore, selected controls, library-only options and the empty and no-match states). Ruff is clean, no migrations are missing, and the CSS was rebuilt. A live check on the real database with 25 entries confirmed paging, notes search, rating sorts in both directions and combined filters, and the data was cleaned up.
+- **Deviations:** The user approved all three behaviors and RED tests without changes. The agent's own choices:
+  - Parameter names (`q`, `status`, `genre`, `min_rating`, `decade`, `sort`, `dir`, `page`) and sort keys (`added`, `title`, `rating`, `released`, `watched`).
+  - Default direction: ascending for title, descending for the others.
+  - Missing values sort last for the release-date and date-watched sorts too, not just rating.
+  - The filter dropdowns list only genres and decades present in your library.
+  - The search box, controls and results swap together, so they stay in step with the URL and the back button.
+  - Noted but not fixed: SQLite's `icontains` ignores case for ASCII letters only.
+- **Sideways:**
+  - During the build, sort and direction parsing ended up in two places. `browse.py` was rewritten around a single `clean_params`.
+  - The first live check failed because `response.context` is `None` outside the test runner without `setup_test_environment()`. The second failed printing "★" to the Windows console. Both times the `finally` block removed the temporary data, which was confirmed before the third, successful run with UTF-8 output.
+  - A CSS spot check first seemed to show `md:grid-cols-6` missing; that was an escaping mistake in the grep pattern, and the class was present.
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser, so URL pushing and back-button behavior weren't checked visually.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 4 session and updated CLAUDE.md with Phase 4 conventions
 
 ### Prompts

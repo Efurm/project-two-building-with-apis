@@ -1,7 +1,9 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from .browse import browse_context
 from .forms import EntryForm, EntryStatusForm
 from .models import Entry
 
@@ -9,12 +11,16 @@ from .models import Entry
 @login_required
 def library_index(request):
     """The signed-in user's library, from local data only (never calls TMDB)."""
-    entries = (
-        Entry.objects.filter(user=request.user)
-        .select_related("movie")
-        .order_by("-created_at", "-pk")
-    )
-    return render(request, "library/index.html", {"entries": entries})
+    entries = Entry.objects.filter(user=request.user).select_related("movie")
+    context = browse_context(request, entries, reverse("library:index"))
+    return render(request, _browse_template(request, "library/index.html"), context)
+
+
+def _browse_template(request, full_page_template):
+    """HTMX swaps (but not history restores) get only the shared browse partial."""
+    if request.htmx and not request.htmx.history_restore_request:
+        return "library/partials/browse.html"
+    return full_page_template
 
 
 def _own_entry(request, pk):

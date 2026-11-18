@@ -5,19 +5,7 @@
   <h1 class="text-2xl font-bold">My library</h1>
   <a href="{% url 'catalog:find' %}" class="btn btn-primary btn-sm">Find movies</a>
 </div>
-{% if entries %}
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-  {% for entry in entries %}
-  {% include "library/partials/entry_card.html" %}
-  {% endfor %}
+<div id="library-browse">
+  {% include "library/partials/browse.html" %}
 </div>
-{% else %}
-<div class="card bg-base-100 shadow">
-  <div class="card-body items-center text-center">
-    <p class="text-lg">Your library is empty.</p>
-    <p class="opacity-70">Movies you save will appear here.
-      <a class="link" href="{% url 'catalog:find' %}">Find movies</a> to get started.</p>
-  </div>
-</div>
-{% endif %}
 {% endblock %}

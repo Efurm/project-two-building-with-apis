@@ -1,0 +1,111 @@
+{% comment %}
+  Shared browse block: controls + results + pagination for a set of entries.
+  Swapped as a whole by HTMX into #library-browse; every setting lives in the URL.
+  Context comes from library.browse.browse_context (plus optional empty_message).
+{% endcomment %}
+{% if not has_any %}
+  <div class="card bg-base-100 shadow">
+    <div class="card-body items-center text-center">
+      {% if empty_message %}
+        <p class="text-lg">{{ empty_message }}</p>
+      {% else %}
+        <p class="text-lg">Your library is empty.</p>
+        <p class="opacity-70">Movies you save will appear here.
+          <a class="link" href="{% url 'catalog:find' %}">Find movies</a> to get started.</p>
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+<form method="get" action="{{ browse_url }}" class="card bg-base-100 shadow-sm mb-4" role="search"
+      data-testid="browse-form"
+      hx-get="{{ browse_url }}" hx-target="#library-browse" hx-push-url="true"
+      hx-trigger="submit, change">
+  <div class="card-body p-4 gap-3">
+    <div class="join w-full">
+      <input type="search" name="q" value="{{ current.q }}" placeholder="Search titles and notes…"
+             class="input join-item w-full" aria-label="Search titles and notes">
+      <button type="submit" class="btn join-item">Search</button>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-2">
+      <select name="status" class="select select-sm w-full" aria-label="Status">
+        <option value="">Any status</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if current.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="genre" class="select select-sm w-full" aria-label="Genre">
+        <option value="">Any genre</option>
+        {% for genre in options.genres %}
+          <option value="{{ genre.tmdb_id }}" {% if current.genre == genre.tmdb_id|stringformat:"s" %}selected{% endif %}>{{ genre.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="min_rating" class="select select-sm w-full" aria-label="Minimum rating">
+        <option value="">Any rating</option>
+        {% for n in "54321" %}
+          <option value="{{ n }}" {% if current.min_rating == n %}selected{% endif %}>{{ n }}★{% if n != "5" %} &amp; up{% endif %}</option>
+        {% endfor %}
+      </select>
+      <select name="decade" class="select select-sm w-full" aria-label="Release decade">
+        <option value="">Any decade</option>
+        {% for decade in options.decades %}
+          <option value="{{ decade }}" {% if current.decade == decade|stringformat:"s" %}selected{% endif %}>{{ decade }}s</option>
+        {% endfor %}
+      </select>
+      <select name="sort" class="select select-sm w-full" aria-label="Sort by">
+        {% for key, label in sorts %}
+          <option value="{{ key }}" {% if current.sort == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="dir" class="select select-sm w-full" aria-label="Sort direction">
+        <option value="desc" {% if current.dir == "desc" %}selected{% endif %}>Descending</option>
+        <option value="asc" {% if current.dir == "asc" %}selected{% endif %}>Ascending</option>
+      </select>
+    </div>
+    <div class="flex items-center justify-between text-sm">
+      <span class="opacity-70" data-testid="result-count">
+        {{ page_obj.paginator.count }} movie{{ page_obj.paginator.count|pluralize }}
+      </span>
+      <a href="{{ browse_url }}" class="link"
+         hx-get="{{ browse_url }}" hx-target="#library-browse" hx-push-url="true">Clear filters</a>
+    </div>
+  </div>
+</form>
+
+{% if entries %}
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for entry in entries %}
+      {% include "library/partials/entry_card.html" %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div role="status" class="alert alert-info alert-soft">
+    <span>No movies match these filters.</span>
+  </div>
+{% endif %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+  <nav class="flex justify-center mt-6" aria-label="Pagination">
+    <div class="join">
+      {% if page_obj.has_previous %}
+        <a class="join-item btn btn-sm" rel="prev"
+           href="{{ browse_url }}{% querystring page=page_obj.previous_page_number %}"
+           hx-get="{{ browse_url }}{% querystring page=page_obj.previous_page_number %}"
+           hx-target="#library-browse" hx-push-url="true">« Previous</a>
+      {% else %}
+        <span class="join-item btn btn-sm btn-disabled">« Previous</span>
+      {% endif %}
+      <span class="join-item btn btn-sm no-animation pointer-events-none">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+      {% if page_obj.has_next %}
+        <a class="join-item btn btn-sm" rel="next"
+           href="{{ browse_url }}{% querystring page=page_obj.next_page_number %}"
+           hx-get="{{ browse_url }}{% querystring page=page_obj.next_page_number %}"
+           hx-target="#library-browse" hx-push-url="true">Next »</a>
+      {% else %}
+        <span class="join-item btn btn-sm btn-disabled">Next »</span>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}
+{% endif %}
