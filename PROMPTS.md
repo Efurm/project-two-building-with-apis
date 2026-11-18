@@ -28,6 +28,20 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Logged the Phase 6 session and updated CLAUDE.md with Phase 6 conventions
+
+### Prompts
+1. `log the session to PROMPTS.md, update CLAUDE.md, then commit and push`
+
+### Summary
+- **Outcome:** Added this entry. Updated the "Conventions in use" section of `CLAUDE.md` with what Phase 6 established and tested:
+  - the movie-service bullet now covers `refresh_movie` (TMDB is called before anything changes, so a failure leaves the row and `last_fetched_at` untouched) and describes `_store_details` as shared by first save and refresh;
+  - a new bullet says the entry page's movie section is `catalog/partials/movie_details.html` (`#movie-details`), swapped whole by Refresh, and that non-HTMX fallbacks redirect with Django messages, which `base.html` now renders.
+
+  The `refresh_movies` command line was already added to the Commands section in the Phase 6 commit. Committed and pushed together with this entry.
+- **Deviations:** None. Only conventions already in the code were added.
+- **Sideways:** The Phase 6 entry was written before its commit and push, so it doesn't record that Phase 6 was committed as `92409cc` and pushed to `origin/main`; it's noted here instead.
+
 ## 2026-11-17 — Implemented Phase 6 (refresh from TMDB: button and command) with TDD
 
 ### Prompts
