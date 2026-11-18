@@ -52,6 +52,31 @@ Then build (add `--watch` while editing templates):
 
 HTMX (v2.0.11) is served locally from `static/js/htmx.min.js`.
 
+## REST API
+
+The API (Django REST Framework) lives under `/api/` and uses the website session or a
+personal token. Generate a token on the "My account" page (`/accounts/me/`), then:
+
+```sh
+TOKEN=your-token-here
+BASE=http://127.0.0.1:8000/api
+
+# List your library (same parameters as the website: q, status, genre, min_rating,
+# decade, sort, dir, page; 20 per page)
+curl -H "Authorization: Token $TOKEN" "$BASE/entries/?status=watched&sort=rating"
+
+# Add a movie by TMDB id (optional: status, rating, notes, date_watched, times_watched)
+curl -X POST -H "Authorization: Token $TOKEN" -H "Content-Type: application/json"      -d '{"tmdb_id": 603, "status": "watched", "rating": 5}' "$BASE/entries/"
+
+# Update or delete one of your entries
+curl -X PATCH -H "Authorization: Token $TOKEN" -H "Content-Type: application/json"      -d '{"notes": "Rewatch soon"}' "$BASE/entries/1/"
+curl -X DELETE -H "Authorization: Token $TOKEN" "$BASE/entries/1/"
+```
+
+Entries are always private to their owner (others' entries are 404). Status and rating
+follow the same rules as the website. Creating an entry for a movie that is not stored
+yet needs TMDB; if TMDB is unavailable the API responds `503` with a `detail` message.
+
 ## Refreshing cached TMDB data
 
 TMDB's terms require cached data to be refreshed at least every 6 months. Saved movies

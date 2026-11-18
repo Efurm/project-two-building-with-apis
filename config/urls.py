@@ -12,5 +12,6 @@ urlpatterns = [
     path("lists/", include("library.list_urls")),
     path("u/<str:username>/", list_views.profile, name="profile"),
     path("shared/", list_views.shared_with_me, name="shared"),
+    path("api/", include("library.api.urls")),
     path("admin/", admin.site.urls),
 ]

@@ -74,3 +74,22 @@ def owner_client(client, owner):
     """A Django test client signed in as `owner`."""
     client.force_login(owner)
     return client
+
+
+@pytest.fixture
+def api_client():
+    """A DRF test client with no credentials."""
+    from rest_framework.test import APIClient
+
+    return APIClient()
+
+
+@pytest.fixture
+def token_for(db):
+    """Return the API token key for a user (creating it if needed)."""
+    from rest_framework.authtoken.models import Token
+
+    def _token_for(user):
+        return Token.objects.get_or_create(user=user)[0].key
+
+    return _token_for

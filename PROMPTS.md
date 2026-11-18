@@ -28,6 +28,43 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 9 (API token and entries API) with TDD
+
+### Prompts
+1. `/implement phase 9`
+2. `yes` (approved three TDD behaviors and the design: token sign-in lists only your own entries, and others are 404; create by `tmdb_id` returns 503 with `detail` when TMDB is needed and down; API updates follow `Entry.clean()`)
+3. `yes pass it` (approved the RED scoping test)
+4. `yes` (moved on to behavior 2)
+5. `yes pass it` (approved the RED 503 test)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED API entry-rules test)
+8. `go ahead` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **DRF setup:** `rest_framework.authtoken` installed and migrated. `REST_FRAMEWORK` uses token then session sign-in, requires sign-in by default, and paginates by page number at 20.
+  - **API code in `library/api/`:**
+    - `EntrySerializer` with nested read-only movie details (genres, `poster_url`). Its `tmdb_id` is write-only and dropped from updates. Its `validate()` runs the model's own `Entry.clean()` on a copy, so messages and clearing match the website.
+    - `EntryViewSet` at `/api/entries/`: limited to `request.user`, so others' entries are 404 for every method. The list uses `browse_entries`, so it takes the same `q`, `status`, `genre`, `min_rating`, `decade`, `sort`, `dir` and `page` settings as the website.
+    - Create goes through `get_or_fetch_movie`: a duplicate is a 400 before any TMDB call (and a race is caught through `IntegrityError`), and a `TMDBError` becomes a 503 `ProviderUnavailable` with the client's message.
+    - Delete returns 204 and removes list memberships.
+  - **"My account" `/accounts/me/` (`accounts:me`):** shows your token with a curl example and generates or regenerates it. Regenerating deletes the old token and shows a message. There's a navbar link.
+  - **Docs:** the README has a "REST API" section with curl examples.
+  - **Checks:** 254 tests pass (3 TDD plus ordinary tests for anonymous and bad-token 401s with `WWW-Authenticate: Token`, session sign-in, the nested movie, browse settings, pagination, create with optional fields, create with only an id, a stored movie while TMDB is down, duplicates, seven invalid payloads, PUT ignoring `tmdb_id`, delete removing memberships, 404s for every method on others' entries, and the token page's sign-in, generate, regenerate and invalidation). Ruff is clean, no migrations are missing, and the CSS was rebuilt.
+  - **Live check over HTTP with curl and a real token against `runserver`:** 401 anonymous, 201 creating The Matrix from the real TMDB, 400 for a duplicate, 400 with the website's message for a rating on an unwatched movie, 200 for Watched plus a rating, a working filter and 204 delete. All the data was cleaned up.
+- **Deviations:** The user approved the design, all three behaviors and the RED tests without changes. The agent's own choices:
+  - The API code lives in `library/api/`, mounted at `/api/`. Token and API views are under `/accounts/me/`.
+  - A duplicate is a 400 on `tmdb_id`, and invalid or blank `tmdb_id` values are 400.
+  - `TokenAuthentication` is listed before session sign-in so failures are 401, not 403.
+  - The PRD names no 503 error code, so it's `provider_unavailable`.
+- **Sideways:**
+  - DRF's `ModelSerializer` doesn't call `Model.clean()`; behavior 3's RED showed the API accepting a rating on an unwatched movie until `validate()` called the model rule.
+  - The first ordinary run expected 401 for a bad token but got 403, because session sign-in was listed first and DRF couldn't send `WWW-Authenticate`. Fixed by reordering, and the anonymous test was tightened to require 401 plus the header.
+  - A heredoc containing an apostrophe ("don't") broke the Bash tool's parsing, so nothing ran. The tests were written with the Write and Edit tools.
+  - Ruff's formatter split a long line in the approved behavior-2 test (a mechanical change).
+  - The "My account" page was checked through tests and HTTP, not in a browser.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-17 — Logged the Phase 8 session and updated CLAUDE.md with Phase 8 conventions
 
 ### Prompts
