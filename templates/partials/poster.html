@@ -1,0 +1,1 @@
+{% load static %}{% static 'img/poster-placeholder.svg' as placeholder %}<img src="{{ url|default:placeholder }}" alt="Poster for {{ title }}" width="96" height="144" loading="lazy" class="{{ class|default:'w-24 h-36 object-cover' }}" onerror="this.onerror=null;this.src='{{ placeholder }}'">

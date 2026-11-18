@@ -3,8 +3,15 @@
 import pytest
 import requests
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 PASSWORD = "correct-horse-battery-staple"
+
+
+@pytest.fixture(autouse=True)
+def _fast_password_hashing(settings):
+    """Tests create many users; the production hasher is deliberately slow."""
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 
 @pytest.fixture(autouse=True)
@@ -42,6 +49,18 @@ def shared_user(make_user):
 @pytest.fixture
 def stranger(make_user):
     return make_user("stranger")
+
+
+@pytest.fixture
+def make_movie(db):
+    """Create a locally stored Movie (no TMDB involved)."""
+    from catalog.models import Movie
+
+    def _make_movie(tmdb_id=27205, title="Inception", **fields):
+        fields.setdefault("last_fetched_at", timezone.now())
+        return Movie.objects.create(tmdb_id=tmdb_id, title=title, **fields)
+
+    return _make_movie
 
 
 @pytest.fixture

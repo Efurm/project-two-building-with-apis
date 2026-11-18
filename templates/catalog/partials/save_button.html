@@ -1,0 +1,18 @@
+<div class="save-control" id="save-{{ tmdb_id }}">
+  {% if in_library %}
+    <span class="btn btn-sm btn-success btn-soft no-animation pointer-events-none">In library ✓</span>
+  {% else %}
+    <form class="join" method="post" action="{% url 'catalog:save' tmdb_id %}"
+          hx-post="{% url 'catalog:save' tmdb_id %}" hx-target="#save-{{ tmdb_id }}" hx-swap="outerHTML">
+      {% csrf_token %}
+      <select name="status" class="select select-sm join-item w-auto" aria-label="Initial status">
+        <option value="want_to_watch">Want to watch</option>
+        <option value="watched">Watched</option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary join-item">Save</button>
+    </form>
+    {% if error %}
+      <p role="alert" class="text-error text-sm mt-1">{{ error }}</p>
+    {% endif %}
+  {% endif %}
+</div>

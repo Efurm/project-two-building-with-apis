@@ -1,9 +1,16 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.db import IntegrityError, transaction
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
-from . import tmdb
+from library.models import Entry
+
+from . import services, tmdb
 
 OVERVIEW_LENGTH = 150
+
+# The initial statuses offered by the Save dropdown.
+SAVE_STATUSES = (Entry.Status.WANT_TO_WATCH, Entry.Status.WATCHED)
 
 
 def _format_result(movie):
@@ -31,7 +38,54 @@ def find_movies(request):
         except tmdb.TMDBError as error:
             context["error"] = error.message
         else:
-            context["results"] = [_format_result(movie) for movie in data.get("results", [])]
+            results = [_format_result(movie) for movie in data.get("results", [])]
+            saved_ids = set(
+                Entry.objects.filter(
+                    user=request.user, movie__tmdb_id__in=[r["tmdb_id"] for r in results]
+                ).values_list("movie__tmdb_id", flat=True)
+            )
+            for result in results:
+                result["in_library"] = result["tmdb_id"] in saved_ids
+            context["results"] = results
 
     template = "catalog/partials/results.html" if request.htmx else "catalog/find.html"
     return render(request, template, context)
+
+
+@login_required
+@require_POST
+def save_movie(request, tmdb_id):
+    """Save a TMDB movie to the user's library with the chosen initial status.
+
+    Uses the locally stored Movie when there is one, so TMDB is contacted only for
+    movies not stored yet.
+    """
+    status = request.POST.get("status")
+    if status not in SAVE_STATUSES:
+        status = Entry.Status.WANT_TO_WATCH
+
+    try:
+        movie = services.get_or_fetch_movie(tmdb_id)
+    except tmdb.TMDBError as error:
+        # Not stored locally and TMDB failed: keep the Save button and explain why.
+        if not request.htmx:
+            return render(request, "catalog/find.html", {"query": "", "error": error.message})
+        return render(
+            request,
+            "catalog/partials/save_button.html",
+            {"tmdb_id": tmdb_id, "in_library": False, "error": error.message},
+        )
+
+    try:
+        with transaction.atomic():
+            Entry.objects.create(user=request.user, movie=movie, status=status)
+    except IntegrityError:
+        pass  # Already in the library (unique user + movie); keep the existing entry as is.
+
+    if not request.htmx:
+        return redirect("library:index")
+    return render(
+        request,
+        "catalog/partials/save_button.html",
+        {"tmdb_id": tmdb_id, "in_library": True},
+    )

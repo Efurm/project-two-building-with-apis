@@ -1,11 +1,38 @@
 {% extends "base.html" %}
 {% block title %}My library{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">My library</h1>
+<div class="flex items-center justify-between mb-4 gap-2">
+  <h1 class="text-2xl font-bold">My library</h1>
+  <a href="{% url 'catalog:find' %}" class="btn btn-primary btn-sm">Find movies</a>
+</div>
+{% if entries %}
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {% for entry in entries %}
+  <article class="card card-side bg-base-100 shadow-sm" data-testid="entry-card">
+    <figure class="w-24 shrink-0 self-start">
+      {% include "partials/poster.html" with url=entry.movie.poster_url title=entry.movie.title %}
+    </figure>
+    <div class="card-body p-4 gap-2">
+      <h2 class="card-title text-base">
+        {{ entry.movie.title }}
+        {% if entry.movie.year %}<span class="font-normal opacity-60">({{ entry.movie.year }})</span>{% endif %}
+      </h2>
+      <div>
+        <span class="badge badge-soft {% if entry.status == 'watched' %}badge-success{% elif entry.status == 'watching' %}badge-warning{% else %}badge-info{% endif %}">
+          {{ entry.get_status_display }}
+        </span>
+      </div>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
 <div class="card bg-base-100 shadow">
   <div class="card-body items-center text-center">
     <p class="text-lg">Your library is empty.</p>
-    <p class="opacity-70">Movies you save will appear here.</p>
+    <p class="opacity-70">Movies you save will appear here.
+      <a class="link" href="{% url 'catalog:find' %}">Find movies</a> to get started.</p>
   </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -84,6 +84,11 @@ def _get(path, params):
         raise TMDBError("invalid_json", "TMDB sent a response that was not valid JSON.") from error
 
 
+def get_movie_details(tmdb_id):
+    """Fetch one movie's full details (including genres and runtime) as decoded JSON."""
+    return _get(f"/movie/{int(tmdb_id)}", {"language": "en-US"})
+
+
 def search_movies(query):
     """Search TMDB movies by title and return the decoded JSON body."""
     return _get(

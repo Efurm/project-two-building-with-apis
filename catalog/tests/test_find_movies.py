@@ -173,3 +173,23 @@ def test_navbar_links_to_find_movies(owner_client):
     content = owner_client.get(reverse("library:index")).content.decode()
 
     assert f'href="{reverse("catalog:find")}"' in content
+
+
+def test_results_already_in_library_show_in_library_others_show_save(
+    owner_client, owner, stranger, make_movie, monkeypatch
+):
+    from library.models import Entry
+
+    matrix = {"id": 603, "title": "The Matrix", "release_date": "1999-03-31", "overview": ""}
+    Entry.objects.create(user=owner, movie=make_movie(tmdb_id=27205))
+    Entry.objects.create(user=stranger, movie=make_movie(tmdb_id=603, title="The Matrix"))
+    monkeypatch.setattr(tmdb, "search_movies", fake_search([INCEPTION, matrix]))
+
+    content = owner_client.get(
+        reverse("catalog:find"), {"q": "x"}, HTTP_HX_REQUEST="true"
+    ).content.decode()
+
+    assert content.count("In library ✓") == 1
+    assert f'hx-post="{reverse("catalog:save", args=[603])}"' in content
+    assert f'hx-post="{reverse("catalog:save", args=[27205])}"' not in content
+    assert 'value="want_to_watch"' in content and 'value="watched"' in content

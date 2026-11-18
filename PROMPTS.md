@@ -28,6 +28,47 @@ Each entry has this shape:
     - **Deviations:** recommendations overridden, follow-up questions asked
     - **Sideways:** failures, wrong turns, and how they were caught
 
+## 2026-11-17 — Implemented Phase 3 (save to library and basic library page) with TDD
+
+### Prompts
+1. `/implement phase 3`
+2. `yes` (approved three TDD behaviors: get-or-fetch stores an unstored movie with genres; saving a stored movie works while TMDB is down; saving twice keeps one entry and shows "In library ✓")
+3. `pass it` (approved the RED get-or-fetch test)
+4. `yes` (moved on to behavior 2)
+5. `yes make it pass` (approved the RED save-while-TMDB-down test)
+6. `yes` (moved on to behavior 3)
+7. `yes pass it` (approved the RED duplicate-save test, including the rule that a second save leaves the existing status unchanged)
+8. `yes` (approved building the rest of the phase normally)
+
+### Summary
+- **Outcome:**
+  - **Models:** `Genre` and `Movie` in catalog (TMDB id unique; poster path stored, URL built at render). `Entry` in library (status choices, 1–5 rating validators, notes, date watched, times watched, timestamps, unique user + movie). Migrations were added and applied locally.
+  - **Get-or-fetch service (`catalog/services.py`):** `get_or_fetch_movie` returns the stored movie without calling TMDB. Otherwise it calls the new `tmdb.get_movie_details` and stores every field, genres (shared, never duplicated) and `last_fetched_at` in one transaction. If two saves race, the second one returns the stored row. If TMDB fails for an unstored movie, it raises `TMDBError`.
+  - **Save action:** `POST /find/save/<tmdb_id>/` (`catalog:save`), sign-in required.
+    - The status field accepts only "Want to watch" or "Watched"; anything else becomes "Want to watch".
+    - Duplicates are blocked by the database constraint, and a second save leaves the existing entry unchanged.
+    - An unstored movie with TMDB down shows an alert and keeps the Save control.
+    - A non-HTMX request redirects to the library.
+  - **Search results:** each card has a Save dropdown, or "In library ✓" when the user already has the movie.
+  - **Library page:** shows only the user's entries, newest first, as cards with poster, title, year and a status badge. It works from local data only.
+  - **Shared poster partial:** `templates/partials/poster.html`, with the placeholder used both when there's no poster and when the image fails to load.
+  - **Admin:** registered the new models.
+  - **Tests:** the three TDD tests plus ordinary tests, 56 in total, all passing. Ruff is clean, no migrations are missing, and the CSS was rebuilt.
+  - **Live check against real TMDB:** saved Inception with real details and genres; search showed "In library ✓"; with a bad token, re-saving a stored movie worked, an unstored save showed an alert, and the library rendered. Temporary data was cleaned up.
+- **Deviations:** The user approved all three behaviors and RED tests without changes. The agent's own choices:
+  - The save URL `/find/save/<tmdb_id>/` was picked because the plan didn't fix one.
+  - Unknown statuses fall back to "Want to watch" rather than returning an error.
+  - Non-HTMX saves redirect to the library.
+  - `Entry.movie` uses PROTECT, so a movie can't be deleted while entries use it (the PRD keeps unused movies anyway).
+  - `poster_path` keeps `null=True` as the PRD says, with a commented `noqa: DJ001`.
+  - An automatic fast-password-hasher fixture cut the suite from about 100 seconds to about 4.
+- **Sideways:**
+  - Behavior 2 used `Entry.objects.create` on purpose, so behavior 3 started as a real 500 error from the unique constraint.
+  - One ordinary test was badly written: it created the same entry in a tangled way. It was rewritten before running.
+  - The library poster test first counted `onerror=` (which appears twice per image because of `this.onerror=null`) and was fixed to count the attribute.
+  - The pages were checked with HTTP requests and Django's test client only; nobody viewed them in a browser.
+  - `CLAUDE.md` was not updated in this session.
+
 ## 2026-11-16 — Logged the Phase 2 session and updated CLAUDE.md with Phase 2 conventions
 
 ### Prompts
